@@ -22,7 +22,20 @@ const LS = {
 };
 const tryParse=(v,d)=>{try{return v?JSON.parse(v):d;}catch{return d;}};
 
-// ── Professional SVG Icons ────────────────────────────────────
+// ── Category Icon Components ──────────────────────────────────
+const CatIcon = ({type, size=24, color="#b8922a"}) => {
+  const icons = {
+    all: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>,
+    men: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5"><path d="M8 3h8l2 5H6L8 3z"/><path d="M6 8v13h12V8"/><path d="M10 8v13M14 8v13"/><path d="M8 3L6 8M16 3l2 5"/></svg>,
+    womenU: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5"><path d="M8 2h8l2 4-3 2v11H9V8L6 6l2-4z"/><path d="M9 8v11M15 8v11"/><path d="M9 13h6"/></svg>,
+    womenS: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5"><path d="M12 2c-2 0-3 1-3 3v1L5 9v11h14V9l-4-3V5c0-2-1-3-3-3z"/><path d="M9 9h6M9 13h6"/></svg>,
+    kids: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5"><circle cx="12" cy="5" r="2.5"/><path d="M9 9h6l1 5-2 1v5h-2v-4h-2v4H8v-5l-2-1z"/><path d="M7 11l-2 3M17 11l2 3"/></svg>,
+  };
+  const map = {all:"all", "Men's Unstitched":"men", "Women Unstitched":"womenU", "Women Stitched":"womenS", "Kids":"kids"};
+  return icons[map[type]||type]||icons.all;
+};
+
+// ── SVG Icons ─────────────────────────────────────────────────
 const ICONS = {
   search: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>,
   heart: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>,
@@ -172,7 +185,7 @@ function TiltCard({children,style,className=""}){
 }
 
 // ── THREE.JS 3D SHOWROOM ──────────────────────────────────────
-function Showroom3D({onEnter}){
+function Showroom3D({onEnter, settings={}}){
   const mountRef=useRef(null);
   const [phase,setPhase]=useState(0);
   const [entered,setEntered]=useState(false);
@@ -276,6 +289,16 @@ function Showroom3D({onEnter}){
 
     signGroup.position.set(0,7.0,-9.7);
     scene.add(signGroup);
+
+    // Sign lights pointing at board
+    const signLight1 = new THREE.SpotLight(0xfff5e0, 3);
+    signLight1.position.set(-3, 9.5, -7);
+    signLight1.target.position.set(0, 7, -9.7);
+    scene.add(signLight1); scene.add(signLight1.target);
+    const signLight2 = new THREE.SpotLight(0xfff5e0, 3);
+    signLight2.position.set(3, 9.5, -7);
+    signLight2.target.position.set(0, 7, -9.7);
+    scene.add(signLight2); scene.add(signLight2.target);
 
     // ── HANGING CLOTHES RODS (both sides) ──
     const rodMat=new THREE.MeshStandardMaterial({color:0xd4a843,metalness:0.9,roughness:0.1});
@@ -640,19 +663,31 @@ function Showroom3D({onEnter}){
       {/* Text overlay */}
       <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",pointerEvents:"none",zIndex:2}}>
         <div style={{textAlign:"center",padding:"0 24px"}}>
-          {phase>=1&&<div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"clamp(10px,1.3vw,13px)",letterSpacing:"8px",color:"#b8922a",marginBottom:"14px",fontStyle:"italic",animation:"fadeUp 0.8s ease both"}}>✦ EST. KUNJAH, GUJRAT ✦</div>}
+          {phase>=1&&<div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"clamp(10px,1.3vw,13px)",letterSpacing:"8px",color:"#b8922a",marginBottom:"12px",fontStyle:"italic",animation:"fadeUp 0.8s ease both"}}>
+            {settings?.intro_line1||"✦ EST. KUNJAH, DISTT GUJRAT ✦"}
+          </div>}
+
           {phase>=1&&<div style={{animation:"fadeUp 0.8s ease 0.15s both"}}>
-            <div style={{fontFamily:"'Playfair Display',serif",fontSize:"clamp(42px,8vw,94px)",fontWeight:"900",color:"#1a1208",lineHeight:1,letterSpacing:"8px",textShadow:"0 4px 30px rgba(180,140,40,0.2)"}}>JAMEEL</div>
-            <div style={{fontFamily:"'Playfair Display',serif",fontSize:"clamp(42px,8vw,94px)",fontWeight:"900",color:"#1a1208",lineHeight:0.95,letterSpacing:"8px",textShadow:"0 4px 30px rgba(180,140,40,0.2)"}}>FABRICS</div>
+            <div style={{fontFamily:"'Playfair Display',serif",fontSize:"clamp(36px,7vw,84px)",fontWeight:"900",color:"#1a1208",lineHeight:1,letterSpacing:"8px",textShadow:"0 2px 20px rgba(180,140,40,0.15)"}}>
+              {settings?.intro_brand1||"JAMEEL"}
+            </div>
+            <div style={{fontFamily:"'Playfair Display',serif",fontSize:"clamp(36px,7vw,84px)",fontWeight:"900",color:"#1a1208",lineHeight:0.95,letterSpacing:"8px",textShadow:"0 2px 20px rgba(180,140,40,0.15)"}}>
+              {settings?.intro_brand2||"FABRICS"}
+            </div>
+            <div style={{fontFamily:"'Jost',sans-serif",fontSize:"clamp(10px,1.5vw,14px)",fontWeight:"300",color:"#1a1208aa",letterSpacing:"14px",marginTop:"6px",textTransform:"uppercase"}}>
+              STORE
+            </div>
           </div>}
-          {phase>=2&&<div style={{display:"flex",alignItems:"center",gap:"12px",justifyContent:"center",margin:"14px 0 12px",animation:"fadeIn 0.8s ease both"}}>
-            <div style={{height:"1px",background:"linear-gradient(to right,transparent,#b8922a)",width:"70px"}}/>
-            <div style={{width:"5px",height:"5px",background:"#b8922a",transform:"rotate(45deg)"}}/>
-            <div style={{height:"1px",background:"linear-gradient(to left,transparent,#b8922a)",width:"70px"}}/>
+
+          {phase>=2&&<div style={{display:"flex",alignItems:"center",gap:"10px",justifyContent:"center",margin:"16px 0 12px",animation:"fadeIn 0.8s ease both"}}>
+            <div style={{height:"1px",background:"linear-gradient(to right,transparent,#b8922a)",width:"60px"}}/>
+            <div style={{width:"5px",height:"5px",background:"#b8922a",transform:"rotate(45deg)",flexShrink:0}}/>
+            <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"clamp(14px,2vw,22px)",letterSpacing:"14px",color:"#b8922a",fontWeight:"400"}}>{settings?.intro_sub||"KUNJAH"}</div>
+            <div style={{width:"5px",height:"5px",background:"#b8922a",transform:"rotate(45deg)",flexShrink:0}}/>
+            <div style={{height:"1px",background:"linear-gradient(to left,transparent,#b8922a)",width:"60px"}}/>
           </div>}
-          {phase>=2&&<div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"clamp(15px,2.4vw,26px)",letterSpacing:"18px",color:"#b8922a",animation:"fadeUp 0.8s ease both",fontWeight:"400"}}>KUNJAH</div>}
-          {phase>=3&&<div style={{height:"1px",background:"linear-gradient(to right,transparent,#b8922a44,transparent)",maxWidth:"300px",margin:"16px auto",animation:"lineExpand 1s ease both"}}/>}
-          {phase>=3&&<div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"clamp(12px,1.5vw,15px)",color:"#8a7a5a",fontStyle:"italic",letterSpacing:"4px",animation:"fadeUp 0.7s ease both"}}>{TAGLINE}</div>}
+
+          {phase>=3&&<div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"clamp(11px,1.4vw,14px)",color:"#8a7a5a",fontStyle:"italic",letterSpacing:"4px",animation:"fadeUp 0.7s ease both"}}>{settings?.intro_tagline||TAGLINE}</div>}
         </div>
       </div>
 
@@ -661,15 +696,14 @@ function Showroom3D({onEnter}){
         <button onClick={onEnter} style={{background:"#1a1208",color:"#d4a843",border:"1px solid #d4a843",borderRadius:"0",padding:"16px 56px",fontSize:"12px",fontWeight:"600",letterSpacing:"4px",textTransform:"uppercase",cursor:"pointer",animation:"fadeUp 0.6s ease both",fontFamily:"'Jost',sans-serif",transition:"all 0.3s"}}
           onMouseEnter={e=>{e.target.style.background="#d4a843";e.target.style.color="#1a1208";}}
           onMouseLeave={e=>{e.target.style.background="#1a1208";e.target.style.color="#d4a843";}}>
-          Enter the Store
+          {settings.intro_enter_btn||"Enter the Store"}
         </button>
         <div style={{fontSize:"10px",color:"#8a7a5a",letterSpacing:"3px",animation:"fadeIn 0.6s ease 0.2s both",fontFamily:"'Jost',sans-serif"}}>SCROLL DOWN TO EXPLORE</div>
       </div>}
 
-      {/* Skip */}
-      <button onClick={onEnter} style={{position:"absolute",top:"20px",right:"20px",background:"none",border:"1px solid #d4a84344",borderRadius:"0",padding:"6px 18px",color:"#8a7a5a",fontSize:"10px",cursor:"pointer",letterSpacing:"2px",zIndex:3,fontFamily:"'Jost',sans-serif",transition:"all 0.2s"}} onMouseEnter={e=>e.target.style.borderColor="#b8922a"} onMouseLeave={e=>e.target.style.borderColor="#d4a84344"}>
+      {settings.intro_skip!==false&&<button onClick={onEnter} style={{position:"absolute",top:"20px",right:"20px",background:"none",border:"1px solid #d4a84344",borderRadius:"0",padding:"6px 18px",color:"#8a7a5a",fontSize:"10px",cursor:"pointer",letterSpacing:"2px",zIndex:3,fontFamily:"'Jost',sans-serif",transition:"all 0.2s"}} onMouseEnter={e=>e.target.style.borderColor="#b8922a"} onMouseLeave={e=>e.target.style.borderColor="#d4a84344"}>
         SKIP ›
-      </button>
+      </button>}
     </div>
   );
 }
@@ -1277,7 +1311,7 @@ function Location(){
         <h2 className="reveal" style={{fontFamily:"'Playfair Display',serif",fontSize:"clamp(26px,4vw,44px)",fontWeight:"700",color:"#1a1208",marginBottom:"8px",animationDelay:"0.1s"}}>Visit Our Store</h2>
         <div className="reveal" style={{width:"40px",height:"1px",background:"#b8922a",margin:"16px auto 40px",animationDelay:"0.2s"}}/>
         <div className="reveal" style={{border:"1px solid #d4a84322",overflow:"hidden",marginBottom:"28px",animationDelay:"0.3s"}}>
-          <iframe title="Location" src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3392.5!2d73.97!3d32.52!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x391f23!2sKunjah%2C+Gujrat&output=embed" width="100%" height="260" style={{border:"none",display:"block",filter:"sepia(0.2) saturate(0.8)"}} loading="lazy"/>
+          <iframe title="Location" src={settings?.googleMapsUrl||"https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3392.5!2d73.97!3d32.52!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x391f23!2sKunjah%2C+Gujrat&output=embed"} width="100%" height="260" style={{border:"none",display:"block",filter:"sepia(0.2) saturate(0.8)"}} loading="lazy"/>
         </div>
         <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))",gap:"16px"}}>
           {[["📍","Address",ADDRESS],["📞","Phone",PHONE],["⏰","Hours","Mon–Sat: 10am–8pm"],["📱","WhatsApp",PHONE]].map(([ic,l,v])=>(
@@ -1611,7 +1645,54 @@ function AdminPanel({products,setProducts,reviews,settings,setSettings,onClose})
               {inp("Video Title","uploadedVideoTitle",undefined,true)}
               {inp("Video Caption (one line per row in table)","uploadedVideoCaption","textarea",true)}
             </>}
-            <button onClick={saveSettings} style={{background:"#1a1208",color:"#d4a843",border:"none",padding:"13px",fontSize:"10px",fontWeight:"700",letterSpacing:"2px",cursor:"pointer",fontFamily:"'Jost',sans-serif",marginTop:"12px",width:"100%",transition:"all 0.2s"}} onMouseEnter={e=>{e.target.style.background="#d4a843";e.target.style.color="#1a1208";}} onMouseLeave={e=>{e.target.style.background="#1a1208";e.target.style.color="#d4a843";}}>SAVE CONTENT</button>
+
+            {/* Google Maps */}
+            <div style={{marginTop:"16px",paddingTop:"16px",borderTop:"1px solid #d4a84322"}}>
+              <div style={{fontSize:"9px",color:"#b8922a",letterSpacing:"2px",marginBottom:"6px",fontFamily:"'Jost',sans-serif",textTransform:"uppercase"}}>Google Maps Embed URL</div>
+              <div style={{fontSize:"10px",color:"#8a7a5a",marginBottom:"8px",fontFamily:"'Jost',sans-serif",lineHeight:1.6}}>
+                Google Maps kholo → apni shop search karo → Share → Embed a map → HTML copy karo → sirf src="..." ke andar wala URL yahan paste karo
+              </div>
+              <input value={sEdit.googleMapsUrl||""} onChange={e=>setSEdit(s=>({...s,googleMapsUrl:e.target.value}))} placeholder="https://www.google.com/maps/embed?pb=..." style={{width:"100%",background:"transparent",border:"none",borderBottom:"1px solid #d4a84344",padding:"6px 0",color:"#1a1208",fontSize:"12px",outline:"none",fontFamily:"'Jost',sans-serif"}}/>
+              {sEdit.googleMapsUrl&&<div style={{marginTop:"8px",border:"1px solid #d4a84322",overflow:"hidden"}}>
+                <iframe src={sEdit.googleMapsUrl} width="100%" height="160" style={{border:"none",display:"block",filter:"sepia(0.2)"}} title="preview"/>
+              </div>}
+            </div>
+
+            <button onClick={saveSettings} style={{background:"#1a1208",color:"#d4a843",border:"none",padding:"13px",fontSize:"10px",fontWeight:"700",letterSpacing:"2px",cursor:"pointer",fontFamily:"'Jost',sans-serif",marginTop:"16px",width:"100%",transition:"all 0.2s"}} onMouseEnter={e=>{e.target.style.background="#d4a843";e.target.style.color="#1a1208";}} onMouseLeave={e=>{e.target.style.background="#1a1208";e.target.style.color="#d4a843";}}>SAVE CONTENT</button>
+          </div>
+
+          {/* 3D Animation Settings */}
+          <div style={{fontFamily:"'Playfair Display',serif",fontWeight:"700",fontSize:"15px",color:"#1a1208",margin:"20px 0 12px"}}>3D Intro Animation Settings</div>
+          <div style={{background:"#fff",border:"1px solid #d4a84322",padding:"24px"}}>
+            <div style={{fontSize:"10px",color:"#8a7a5a",marginBottom:"14px",fontFamily:"'Jost',sans-serif",lineHeight:1.7,background:"var(--cream2)",padding:"10px 12px",border:"1px solid #d4a84322"}}>
+              Yeh settings 3D showroom intro pe apply hongi. Save karne ke baad page refresh karo — naya intro dikhega.
+            </div>
+            {[
+              ["Intro Line 1 (small top text)","intro_line1"],
+              ["Brand Name Line 1","intro_brand1"],
+              ["Brand Name Line 2","intro_brand2"],
+              ["Sub Location Text","intro_sub"],
+              ["Tagline","intro_tagline"],
+              ["Enter Button Text","intro_enter_btn"],
+            ].map(([l,k])=>(
+              <div key={k} style={{marginBottom:"12px"}}>
+                <div style={{fontSize:"9px",color:"#b8922a",letterSpacing:"2px",marginBottom:"4px",fontFamily:"'Jost',sans-serif",textTransform:"uppercase"}}>{l}</div>
+                <input value={sEdit[k]||""} onChange={e=>setSEdit(s=>({...s,[k]:e.target.value}))} placeholder={`Default: ${k==="intro_brand1"?"JAMEEL":k==="intro_brand2"?"FABRICS":k==="intro_sub"?"KUNJAH":k==="intro_tagline"?TAGLINE:k==="intro_enter_btn"?"Enter the Store":"✦ EST. KUNJAH, DISTT GUJRAT ✦"}`} style={{width:"100%",background:"transparent",border:"none",borderBottom:"1px solid #d4a84344",padding:"6px 0",color:"#1a1208",fontSize:"13px",outline:"none",fontFamily:"'Jost',sans-serif"}}/>
+              </div>
+            ))}
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"12px"}}>
+              <div>
+                <div style={{fontSize:"9px",color:"#b8922a",letterSpacing:"2px",marginBottom:"4px",fontFamily:"'Jost',sans-serif",textTransform:"uppercase"}}>Intro Duration (sec)</div>
+                <input type="number" min="3" max="10" value={sEdit.intro_duration||5} onChange={e=>setSEdit(s=>({...s,intro_duration:+e.target.value}))} style={{width:"100%",background:"transparent",border:"none",borderBottom:"1px solid #d4a84344",padding:"6px 0",color:"#1a1208",fontSize:"13px",outline:"none",fontFamily:"'Jost',sans-serif"}}/>
+              </div>
+              <div>
+                <div style={{fontSize:"9px",color:"#b8922a",letterSpacing:"2px",marginBottom:"4px",fontFamily:"'Jost',sans-serif",textTransform:"uppercase"}}>Skip Button</div>
+                <label style={{display:"flex",alignItems:"center",gap:"6px",cursor:"pointer",fontSize:"12px",color:"#1a1208",fontFamily:"'Jost',sans-serif",marginTop:"8px"}}>
+                  <input type="checkbox" checked={sEdit.intro_skip!==false} onChange={e=>setSEdit(s=>({...s,intro_skip:e.target.checked}))} style={{accentColor:"#b8922a"}}/>Show Skip button
+                </label>
+              </div>
+            </div>
+            <button onClick={saveSettings} style={{background:"#1a1208",color:"#d4a843",border:"none",padding:"13px",fontSize:"10px",fontWeight:"700",letterSpacing:"2px",cursor:"pointer",fontFamily:"'Jost',sans-serif",marginTop:"14px",width:"100%"}}>SAVE 3D SETTINGS</button>
           </div>
         </div>}
 
@@ -1837,7 +1918,7 @@ export default function App(){
       <style>{`@media(min-width:769px){.show-mob{display:none!important}}`}</style>
 
       {/* 3D Showroom */}
-      {show3D&&<Showroom3D onEnter={()=>setShow3D(false)}/>}
+      {show3D&&<Showroom3D onEnter={()=>setShow3D(false)} settings={settings}/>}
 
       {!show3D&&<>
         <AnnouncementBar texts={settings.announcements}/>
@@ -1853,15 +1934,18 @@ export default function App(){
           <Hero settings={settings} setCat={setCat} setPage={setPage}/>
 
           {/* Category pills */}
-          <div style={{background:"#fff",borderBottom:"1px solid #d4a84322",padding:"16px clamp(16px,4vw,48px)",overflowX:"auto"}}>
-            <div style={{display:"flex",gap:"8px",justifyContent:"center",minWidth:"max-content",margin:"0 auto"}}>
+          <div style={{background:"#fff",borderBottom:"1px solid #d4a84322",padding:"14px clamp(16px,4vw,48px)",overflowX:"auto"}}>
+            <div style={{display:"flex",gap:"6px",justifyContent:"center",minWidth:"max-content",margin:"0 auto"}}>
               {CATS.map(c=>{
-                const iconKey = (settings.catIcons||{})[c] || DEFAULT_CAT_ICONS[c] || "catAll";
-                const iconEl = ICONS[iconKey] || ICONS.catAll;
+                const active = cat===c;
                 return(
-                  <button key={c} onClick={()=>{setCat(c);setPage("shop");}} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:"6px",padding:"10px 18px",border:`1px solid ${cat===c?"#b8922a":"#d4a84322"}`,background:cat===c?"#b8922a11":"transparent",cursor:"pointer",transition:"all 0.3s",minWidth:"80px",transform:cat===c?"translateY(-1px)":"translateY(0)"}}>
-                    <span style={{color:cat===c?"#b8922a":"#8a7a5a",transition:"color 0.2s"}}>{iconEl}</span>
-                    <span style={{fontSize:"9px",fontWeight:"700",color:cat===c?"#b8922a":"#8a7a5a",letterSpacing:"1.5px",textTransform:"uppercase",fontFamily:"'Jost',sans-serif"}}>{c==="All"?"All":c.split(" ")[0]}</span>
+                  <button key={c} onClick={()=>{setCat(c);setPage("shop");}} style={{display:"flex",alignItems:"center",gap:"8px",padding:"10px 18px",border:`1px solid ${active?"#b8922a":"#d4a84322"}`,background:active?"#1a1208":"transparent",cursor:"pointer",transition:"all 0.25s",whiteSpace:"nowrap",transform:active?"translateY(-1px)":"none",boxShadow:active?"0 4px 16px rgba(26,18,8,0.15)":"none"}}>
+                    <span style={{color:active?"#d4a843":"#b8922a",flexShrink:0}}>
+                      <CatIcon type={c} size={18} color={active?"#d4a843":"#b8922a"}/>
+                    </span>
+                    <span style={{fontSize:"10px",fontWeight:"600",color:active?"#d4a843":"#8a7a5a",letterSpacing:"1px",textTransform:"uppercase",fontFamily:"'Jost',sans-serif"}}>
+                      {c==="All"?"All Collections":c}
+                    </span>
                   </button>
                 );
               })}
