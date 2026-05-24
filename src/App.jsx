@@ -185,525 +185,457 @@ function TiltCard({children,style,className=""}){
 }
 
 // ── THREE.JS 3D SHOWROOM ──────────────────────────────────────
-function Showroom3D({onEnter, settings={}}){
+function Showroom3D({onEnter,settings={}}){
   const mountRef=useRef(null);
   const [phase,setPhase]=useState(0);
-  const [entered,setEntered]=useState(false);
+  const [showBtn,setShowBtn]=useState(false);
 
   useEffect(()=>{
     const el=mountRef.current;if(!el)return;
     const W=el.clientWidth,H=el.clientHeight;
 
+    // Renderer
     const renderer=new THREE.WebGLRenderer({antialias:true,alpha:false});
     renderer.setSize(W,H);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
     renderer.shadowMap.enabled=true;
     renderer.shadowMap.type=THREE.PCFSoftShadowMap;
     renderer.toneMapping=THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure=1.2;
-    renderer.setClearColor(0xfaf8f3,1);
+    renderer.toneMappingExposure=0.9;
     el.appendChild(renderer.domElement);
 
+    // Scene — night
     const scene=new THREE.Scene();
-    scene.background=new THREE.Color(0xf5f0e6);
-    scene.fog=new THREE.FogExp2(0xf5f0e6,0.04);
+    scene.background=new THREE.Color(0x020408);
+    scene.fog=new THREE.FogExp2(0x020408,0.018);
 
-    const camera=new THREE.PerspectiveCamera(55,W/H,0.1,200);
-    camera.position.set(0,4,18);
-    camera.lookAt(0,2,0);
+    // Camera
+    const camera=new THREE.PerspectiveCamera(60,W/H,0.1,300);
+    camera.position.set(0,3,35);
+    camera.lookAt(0,4,0);
 
-    // ── FLOOR ──
-    const floorGeo=new THREE.PlaneGeometry(40,40);
-    const floorMat=new THREE.MeshStandardMaterial({color:0xf0ebe0,metalness:0.4,roughness:0.3});
-    const floor=new THREE.Mesh(floorGeo,floorMat);
-    floor.rotation.x=-Math.PI/2;
-    floor.receiveShadow=true;
-    scene.add(floor);
+    // ── ROAD ──
+    const roadGeo=new THREE.PlaneGeometry(18,120);
+    const roadMat=new THREE.MeshStandardMaterial({color:0x111111,roughness:0.9,metalness:0.1});
+    const road=new THREE.Mesh(roadGeo,roadMat);
+    road.rotation.x=-Math.PI/2;
+    road.receiveShadow=true;
+    scene.add(road);
 
-    // Floor tiles
-    for(let i=-4;i<=4;i++){
-      for(let j=-4;j<=4;j++){
-        if((i+j)%2===0){
-          const tileGeo=new THREE.PlaneGeometry(2.4,2.4);
-          const tileMat=new THREE.MeshStandardMaterial({color:0xe8dfc8,metalness:0.3,roughness:0.4});
-          const tile=new THREE.Mesh(tileGeo,tileMat);
-          tile.rotation.x=-Math.PI/2;
-          tile.position.set(i*2.5,0.01,j*2.5);
-          tile.receiveShadow=true;
-          scene.add(tile);
-        }
-      }
+    // Road lines
+    for(let i=-6;i<=6;i+=2){
+      const line=new THREE.Mesh(new THREE.PlaneGeometry(0.12,60),new THREE.MeshStandardMaterial({color:0xddcc44,emissive:0xddcc44,emissiveIntensity:0.3}));
+      line.rotation.x=-Math.PI/2;
+      line.position.set(i===0?0:null,0.01,0);
+      if(i===0){line.position.set(0,0.01,0);scene.add(line);}
+    }
+    // Center dashes
+    for(let z=-50;z<50;z+=6){
+      const dash=new THREE.Mesh(new THREE.PlaneGeometry(0.15,2.5),new THREE.MeshStandardMaterial({color:0xffffff,emissive:0xffffff,emissiveIntensity:0.4}));
+      dash.rotation.x=-Math.PI/2;
+      dash.position.set(0,0.015,z);
+      scene.add(dash);
     }
 
-    // ── BACK WALL ──
-    const wallGeo=new THREE.PlaneGeometry(24,12);
-    const wallMat=new THREE.MeshStandardMaterial({color:0xfaf7f0,metalness:0.1,roughness:0.8});
-    const wall=new THREE.Mesh(wallGeo,wallMat);
-    wall.position.set(0,6,-10);
-    wall.receiveShadow=true;
-    scene.add(wall);
-
-    // Side walls
-    [-12,12].forEach(x=>{
-      const sw=new THREE.Mesh(new THREE.PlaneGeometry(24,12),wallMat.clone());
-      sw.rotation.y=x<0?Math.PI/2:-Math.PI/2;
-      sw.position.set(x,6,0);
-      scene.add(sw);
+    // ── PAVEMENT ──
+    [-9,9].forEach(side=>{
+      const pave=new THREE.Mesh(new THREE.PlaneGeometry(6,120),new THREE.MeshStandardMaterial({color:0x2a2a2a,roughness:1}));
+      pave.rotation.x=-Math.PI/2;
+      pave.position.set(side>0?12:-12,0.01,0);
+      scene.add(pave);
     });
 
-    // ── PROPER SHOP SIGNBOARD ──
+    // ── STORE BUILDING ──
+    // Main building body
+    const bldMat=new THREE.MeshStandardMaterial({color:0xfaf8f3,metalness:0.05,roughness:0.7});
+    const building=new THREE.Mesh(new THREE.BoxGeometry(22,14,8),bldMat);
+    building.position.set(0,7,-12);
+    building.receiveShadow=true;
+    building.castShadow=true;
+    scene.add(building);
+
+    // Building top accent
+    const topAccent=new THREE.Mesh(new THREE.BoxGeometry(22.4,0.4,8.4),new THREE.MeshStandardMaterial({color:0xd4a843,metalness:0.8,roughness:0.1,emissive:0xd4a843,emissiveIntensity:0.1}));
+    topAccent.position.set(0,14.2,-12);
+    scene.add(topAccent);
+
+    // Gold corner pillars
+    [-10.5,10.5].forEach(x=>{
+      const pillar=new THREE.Mesh(new THREE.BoxGeometry(0.6,14,0.6),new THREE.MeshStandardMaterial({color:0xd4a843,metalness:0.9,roughness:0.1}));
+      pillar.position.set(x,7,-8.3);
+      scene.add(pillar);
+    });
+
+    // ── ENTRANCE GLASS DOORS ──
+    const glassMat=new THREE.MeshStandardMaterial({color:0x88bbdd,metalness:0.1,roughness:0.0,transparent:true,opacity:0.25});
+    [-1.5,1.5].forEach(x=>{
+      const door=new THREE.Mesh(new THREE.BoxGeometry(2.8,5.5,0.08),glassMat);
+      door.position.set(x,2.75,-8.2);
+      scene.add(door);
+      // Door frame
+      const frame=new THREE.Mesh(new THREE.BoxGeometry(2.85,5.6,0.12),new THREE.MeshStandardMaterial({color:0xd4a843,metalness:0.9,roughness:0.1}));
+      frame.position.set(x,2.75,-8.25);
+      scene.add(frame);
+    });
+
+    // Door handle
+    [-1.1,1.1].forEach(x=>{
+      const handle=new THREE.Mesh(new THREE.CylinderGeometry(0.04,0.04,0.6,8),new THREE.MeshStandardMaterial({color:0xd4a843,metalness:1,roughness:0}));
+      handle.rotation.z=Math.PI/2;
+      handle.position.set(x,2.6,-8.0);
+      scene.add(handle);
+    });
+
+    // ── STORE SIGN BOARD ──
     const signGroup=new THREE.Group();
 
-    // Main board — dark wood
-    const boardMat=new THREE.MeshStandardMaterial({color:0x2a1a08,metalness:0.1,roughness:0.7});
-    const boardBg=new THREE.Mesh(new THREE.BoxGeometry(9,2.2,0.15),boardMat);
+    // Board background — dark premium
+    const boardBg=new THREE.Mesh(new THREE.BoxGeometry(10,2.6,0.18),new THREE.MeshStandardMaterial({color:0x0f0c08,metalness:0.2,roughness:0.5}));
     signGroup.add(boardBg);
 
-    // Gold frame — top
-    const frameMat=new THREE.MeshStandardMaterial({color:0xd4a843,metalness:0.95,roughness:0.05,emissive:0xd4a843,emissiveIntensity:0.2});
-    [[0,1.15,true],[0,-1.15,true],[4.55,0,false],[-4.55,0,false]].forEach(([x,y,horiz])=>{
-      const f=new THREE.Mesh(new THREE.BoxGeometry(horiz?9.2:0.12,horiz?0.12:2.44,0.18),frameMat);
+    // Gold border frame
+    const fMat=new THREE.MeshStandardMaterial({color:0xd4a843,metalness:0.95,roughness:0.05,emissive:0xd4a843,emissiveIntensity:0.4});
+    [[0,1.35,true],[0,-1.35,true],[5.1,0,false],[-5.1,0,false]].forEach(([x,y,h])=>{
+      const f=new THREE.Mesh(new THREE.BoxGeometry(h?10.4:0.15,h?0.15:2.9,0.22),fMat);
       f.position.set(x,y,0);signGroup.add(f);
     });
 
-    // Corner ornaments
-    [[4.4,1.0],[4.4,-1.0],[-4.4,1.0],[-4.4,-1.0]].forEach(([x,y])=>{
-      const orn=new THREE.Mesh(new THREE.SphereGeometry(0.15,12,12),frameMat);
-      orn.position.set(x,y,0.1);signGroup.add(orn);
+    // JF Circle monogram
+    const jfRing=new THREE.Mesh(new THREE.TorusGeometry(0.58,0.07,12,32),fMat);
+    jfRing.position.set(0,0.28,0.1);
+    signGroup.add(jfRing);
+
+    // Inner circle
+    const jfDot=new THREE.Mesh(new THREE.CircleGeometry(0.48,32),new THREE.MeshStandardMaterial({color:0xd4a843,emissive:0xd4a843,emissiveIntensity:0.3}));
+    jfDot.position.set(0,0.28,0.12);
+    signGroup.add(jfDot);
+
+    // Divider line
+    const divLine=new THREE.Mesh(new THREE.BoxGeometry(7,0.04,0.1),fMat);
+    divLine.position.set(0,-0.22,0.1);
+    signGroup.add(divLine);
+
+    // Diamond corner ornaments
+    [[4.6,1.2],[4.6,-1.2],[-4.6,1.2],[-4.6,-1.2]].forEach(([x,y])=>{
+      const d=new THREE.Mesh(new THREE.BoxGeometry(0.18,0.18,0.15),fMat);
+      d.rotation.z=Math.PI/4;
+      d.position.set(x,y,0.1);signGroup.add(d);
     });
 
-    // Gold divider line between JAMEEL FABRICS and KUNJAH
-    const divider=new THREE.Mesh(new THREE.BoxGeometry(6,0.04,0.1),frameMat);
-    divider.position.set(0,-0.08,0.1);
-    signGroup.add(divider);
-
-    // Hanging chains
-    [-3.5,3.5].forEach(x=>{
-      for(let i=0;i<5;i++){
-        const link=new THREE.Mesh(new THREE.TorusGeometry(0.06,0.02,6,8),frameMat);
-        link.position.set(x,1.1+i*0.14,0);
-        link.rotation.x=i%2===0?Math.PI/2:0;
-        signGroup.add(link);
-      }
-    });
-
-    signGroup.position.set(0,7.0,-9.7);
+    signGroup.position.set(0,10.2,-8.1);
     scene.add(signGroup);
 
-    // Sign lights pointing at board
-    const signLight1 = new THREE.SpotLight(0xfff5e0, 3);
-    signLight1.position.set(-3, 9.5, -7);
-    signLight1.target.position.set(0, 7, -9.7);
-    scene.add(signLight1); scene.add(signLight1.target);
-    const signLight2 = new THREE.SpotLight(0xfff5e0, 3);
-    signLight2.position.set(3, 9.5, -7);
-    signLight2.target.position.set(0, 7, -9.7);
-    scene.add(signLight2); scene.add(signLight2.target);
-
-    // ── HANGING CLOTHES RODS (both sides) ──
-    const rodMat=new THREE.MeshStandardMaterial({color:0xd4a843,metalness:0.9,roughness:0.1});
-
-    // Left side — Women clothes rack
-    const leftRod=new THREE.Mesh(new THREE.CylinderGeometry(0.04,0.04,4,12),rodMat);
-    leftRod.rotation.z=Math.PI/2;
-    leftRod.position.set(-8,4.5,-5);
-    scene.add(leftRod);
-
-    // Support brackets for left rod
-    [-9.8,-6.2].forEach(x=>{
-      const bracket=new THREE.Mesh(new THREE.CylinderGeometry(0.03,0.03,1.2,8),rodMat);
-      bracket.position.set(x,5.1,-5);
-      scene.add(bracket);
+    // Sign spotlights
+    [[-3,14,-4],[3,14,-4]].forEach(([x,y,z])=>{
+      const sl=new THREE.SpotLight(0xfff5dd,0,8,Math.PI/5,0.4);
+      sl.position.set(x,y,z);
+      sl.target=signGroup;
+      scene.add(sl);scene.add(sl.target);
+      // Animate these later
+      signGroup.userData.lights=signGroup.userData.lights||[];
+      signGroup.userData.lights.push(sl);
     });
 
-    // Women clothes hanging on left rod
-    const womenColors=[0xc9184a,0x7b1fa2,0x0288d1,0xe65100,0x00695c,0xad1457];
-    for(let i=0;i<6;i++){
-      const hanger=new THREE.Group();
-      // Hanger hook
-      const hookGeo=new THREE.TorusGeometry(0.12,0.025,6,14,Math.PI);
-      const hook=new THREE.Mesh(hookGeo,rodMat);
-      hook.position.y=0.12;
-      hanger.add(hook);
-      // Hanger bar
-      const bar=new THREE.Mesh(new THREE.CylinderGeometry(0.015,0.015,0.6,6),rodMat);
-      bar.rotation.z=Math.PI/2;
-      bar.position.y=-0.05;
-      hanger.add(bar);
-      // Dress/kameez shape (cone for feminine)
-      const dressGeo=new THREE.ConeGeometry(0.28,1.3,8);
-      const dressMat=new THREE.MeshStandardMaterial({color:womenColors[i],metalness:0.0,roughness:0.9,side:THREE.DoubleSide});
-      const dress=new THREE.Mesh(dressGeo,dressMat);
-      dress.position.y=-0.9;
-      hanger.add(dress);
-      // Dupatta (thin plane hanging)
-      const duppGeo=new THREE.PlaneGeometry(0.35,0.9);
-      const duppMat=new THREE.MeshStandardMaterial({color:0xd4a843,metalness:0.1,roughness:0.7,transparent:true,opacity:0.7,side:THREE.DoubleSide});
-      const dupp=new THREE.Mesh(duppGeo,duppMat);
-      dupp.position.set(0.2,-0.7,0.1);
-      dupp.rotation.z=0.2;
-      hanger.add(dupp);
-
-      hanger.position.set(-9.8+i*0.68,4.3,-5);
-      scene.add(hanger);
-    }
-
-    // Right side — Men shalwar kameez rack
-    const rightRod=new THREE.Mesh(new THREE.CylinderGeometry(0.04,0.04,4,12),rodMat);
-    rightRod.rotation.z=Math.PI/2;
-    rightRod.position.set(8,4.5,-5);
-    scene.add(rightRod);
-
-    [6.2,9.8].forEach(x=>{
-      const bracket=new THREE.Mesh(new THREE.CylinderGeometry(0.03,0.03,1.2,8),rodMat);
-      bracket.position.set(x,5.1,-5);
-      scene.add(bracket);
+    // ── STREET LAMPS ──
+    [-7,7].forEach(x=>{
+      const pole=new THREE.Mesh(new THREE.CylinderGeometry(0.08,0.1,7,8),new THREE.MeshStandardMaterial({color:0x333333,metalness:0.6,roughness:0.3}));
+      pole.position.set(x,3.5,-2);
+      scene.add(pole);
+      const arm=new THREE.Mesh(new THREE.CylinderGeometry(0.04,0.04,1.5,8),new THREE.MeshStandardMaterial({color:0x333333}));
+      arm.rotation.z=x>0?-Math.PI/6:Math.PI/6;
+      arm.position.set(x+(x>0?0.6:-0.6),7.3,-2);
+      scene.add(arm);
+      const lamp=new THREE.Mesh(new THREE.SphereGeometry(0.25,12,12),new THREE.MeshStandardMaterial({color:0xfffadd,emissive:0xfffadd,emissiveIntensity:1}));
+      lamp.position.set(x+(x>0?1.1:-1.1),7.3,-2);
+      scene.add(lamp);
+      const lLight=new THREE.PointLight(0xfff8cc,1.2,12);
+      lLight.position.set(x+(x>0?1.1:-1.1),7.2,-2);
+      scene.add(lLight);
     });
 
-    const menColors=[0x1b5e20,0x0d47a1,0x4a148c,0x880e4f,0x4e342e,0x37474f];
-    for(let i=0;i<6;i++){
-      const hanger=new THREE.Group();
-      const hookGeo=new THREE.TorusGeometry(0.12,0.025,6,14,Math.PI);
-      const hook=new THREE.Mesh(hookGeo,rodMat);
-      hook.position.y=0.12;
-      hanger.add(hook);
-      const bar=new THREE.Mesh(new THREE.CylinderGeometry(0.015,0.015,0.55,6),rodMat);
-      bar.rotation.z=Math.PI/2;
-      bar.position.y=-0.05;
-      hanger.add(bar);
-      // Kameez shape (more rectangular/straight)
-      const kameezGeo=new THREE.BoxGeometry(0.48,1.1,0.04);
-      const kameezMat=new THREE.MeshStandardMaterial({color:menColors[i],metalness:0.0,roughness:0.9});
-      const kameez=new THREE.Mesh(kameezGeo,kameezMat);
-      kameez.position.y=-0.75;
-      hanger.add(kameez);
-      // Shalwar (hanging below)
-      const shalwarGeo=new THREE.BoxGeometry(0.42,0.8,0.03);
-      const shalwar=new THREE.Mesh(shalwarGeo,new THREE.MeshStandardMaterial({color:menColors[(i+3)%6],metalness:0.0,roughness:0.9}));
-      shalwar.position.y=-1.75;
-      hanger.add(shalwar);
+    // ── SPORTS CAR ──
+    const carGroup=new THREE.Group();
+    const carMat=new THREE.MeshStandardMaterial({color:0x1a1a2e,metalness:0.9,roughness:0.1});
+    const darkMat=new THREE.MeshStandardMaterial({color:0x111111,metalness:0.7,roughness:0.2});
+    const glassMat2=new THREE.MeshStandardMaterial({color:0x223344,metalness:0.1,roughness:0,transparent:true,opacity:0.4});
+    const goldMat=new THREE.MeshStandardMaterial({color:0xd4a843,metalness:0.95,roughness:0.05});
+    const chromeMat=new THREE.MeshStandardMaterial({color:0xdddddd,metalness:1,roughness:0.05});
 
-      hanger.position.set(6.2+i*0.68,4.3,-5);
-      scene.add(hanger);
-    }
+    // Car body — main low sleek shape
+    const body=new THREE.Mesh(new THREE.BoxGeometry(4,0.7,2),carMat);
+    body.position.y=0.6;
+    carGroup.add(body);
 
-    // ── FABRIC SHELF — Back wall ──
-    const shelfMat=new THREE.MeshStandardMaterial({color:0xffffff,metalness:0.1,roughness:0.6});
-    [-5,0,5].forEach(x=>{
-      const shelf=new THREE.Mesh(new THREE.BoxGeometry(3,0.08,0.5),shelfMat);
-      shelf.position.set(x,3.5,-9.2);
-      scene.add(shelf);
-      // Fabric rolls on shelf
-      const fabColors=[0xff6b6b,0x4ecdc4,0x45b7d1,0xf9c74f,0x90be6d,0xf8961e];
-      for(let r=0;r<4;r++){
-        const rollGeo=new THREE.CylinderGeometry(0.22,0.22,0.55,16);
-        const rollMat=new THREE.MeshStandardMaterial({color:fabColors[(x/5+2+r)%6],metalness:0.0,roughness:0.85});
-        const roll=new THREE.Mesh(rollGeo,rollMat);
-        roll.rotation.z=Math.PI/2;
-        roll.position.set(x-0.9+r*0.6,3.72,-9.0);
-        roll.castShadow=true;
-        scene.add(roll);
-      }
+    // Car cabin — angled top
+    const cabin=new THREE.Mesh(new THREE.BoxGeometry(2.2,0.6,1.8),carMat);
+    cabin.position.set(-0.1,1.15,0);
+    carGroup.add(cabin);
+
+    // Front sloped hood
+    const hoodGeo=new THREE.BufferGeometry();
+    const hoodV=new Float32Array([
+      -2,0.95,0.9,  -2,0.95,-0.9,  -0.9,1.15,0.9,  -0.9,1.15,-0.9,
+    ]);
+    hoodGeo.setAttribute('position',new THREE.BufferAttribute(hoodV,3));
+    hoodGeo.setIndex([0,1,2, 1,3,2]);
+    hoodGeo.computeVertexNormals();
+    const hood=new THREE.Mesh(hoodGeo,carMat);
+    carGroup.add(hood);
+
+    // Windshield
+    const ws=new THREE.Mesh(new THREE.PlaneGeometry(2,0.8),glassMat2);
+    ws.position.set(-0.9,1.3,0);
+    ws.rotation.y=Math.PI/2;
+    ws.rotation.z=0.3;
+    carGroup.add(ws);
+
+    // Rear window
+    const rw=new THREE.Mesh(new THREE.PlaneGeometry(1.6,0.6),glassMat2);
+    rw.position.set(0.82,1.22,0);
+    rw.rotation.y=Math.PI/2;
+    rw.rotation.z=-0.3;
+    carGroup.add(rw);
+
+    // Gold accent stripe
+    const stripe=new THREE.Mesh(new THREE.BoxGeometry(4.1,0.06,0.06),goldMat);
+    stripe.position.set(0,0.96,0.98);
+    carGroup.add(stripe);
+    const stripe2=new THREE.Mesh(new THREE.BoxGeometry(4.1,0.06,0.06),goldMat);
+    stripe2.position.set(0,0.96,-0.98);
+    carGroup.add(stripe2);
+
+    // Front bumper
+    const bumper=new THREE.Mesh(new THREE.BoxGeometry(0.15,0.35,1.8),darkMat);
+    bumper.position.set(-2.08,0.5,0);
+    carGroup.add(bumper);
+
+    // Rear bumper
+    const rBumper=new THREE.Mesh(new THREE.BoxGeometry(0.15,0.35,1.8),darkMat);
+    rBumper.position.set(2.08,0.5,0);
+    carGroup.add(rBumper);
+
+    // Spoiler
+    const spoiler=new THREE.Mesh(new THREE.BoxGeometry(0.1,0.3,1.8),carMat);
+    spoiler.position.set(1.9,1.0,0);
+    carGroup.add(spoiler);
+    const spoilerTop=new THREE.Mesh(new THREE.BoxGeometry(0.5,0.05,1.9),darkMat);
+    spoilerTop.position.set(1.8,1.15,0);
+    carGroup.add(spoilerTop);
+
+    // Wheels
+    [[- 1.5,0,1.1],[1.5,0,1.1],[-1.5,0,-1.1],[1.5,0,-1.1]].forEach(([x,y,z])=>{
+      const tire=new THREE.Mesh(new THREE.CylinderGeometry(0.38,0.38,0.28,20),new THREE.MeshStandardMaterial({color:0x111111,roughness:1}));
+      tire.rotation.x=Math.PI/2;
+      tire.position.set(x,y+0.38,z);
+      carGroup.add(tire);
+      const rim=new THREE.Mesh(new THREE.CylinderGeometry(0.26,0.26,0.3,10),goldMat);
+      rim.rotation.x=Math.PI/2;
+      rim.position.set(x,y+0.38,z+(z>0?0.01:-0.01));
+      carGroup.add(rim);
+      // Wheel arch
+      const arch=new THREE.Mesh(new THREE.TorusGeometry(0.42,0.08,8,20,Math.PI),carMat);
+      arch.rotation.x=Math.PI/2;
+      arch.rotation.z=Math.PI;
+      arch.position.set(x,y+0.42,z);
+      carGroup.add(arch);
     });
 
-
-    // ── DISPLAY TABLES ──
-    const tableMat=new THREE.MeshStandardMaterial({color:0xffffff,metalness:0.2,roughness:0.5});
-    const legMat=new THREE.MeshStandardMaterial({color:0xd4a843,metalness:0.9,roughness:0.1});
-    [-5,0,5].forEach((x,idx)=>{
-      const tableTop=new THREE.Mesh(new THREE.BoxGeometry(2.4,0.1,1.4),tableMat);
-      tableTop.position.set(x,1.1,-2);
-      tableTop.castShadow=true;
-      tableTop.receiveShadow=true;
-      scene.add(tableTop);
-      [[0.8,0.4],[0.8,-0.4],[-0.8,0.4],[-0.8,-0.4]].forEach(([lx,lz])=>{
-        const leg=new THREE.Mesh(new THREE.CylinderGeometry(0.04,0.04,1.1,8),legMat);
-        leg.position.set(x+lx,0.55,lz-2);
-        scene.add(leg);
-      });
-
-      // Fabric rolls on table
-      const colors=[0xc9184a,0x1565c0,0x2e7d32,0xe65100,0x6a1b9a];
-      for(let r=0;r<3;r++){
-        const fabricGeo=new THREE.CylinderGeometry(0.18,0.18,1.2,16);
-        const fabricMat=new THREE.MeshStandardMaterial({color:colors[(idx*3+r)%colors.length],metalness:0.0,roughness:0.9});
-        const fabric=new THREE.Mesh(fabricGeo,fabricMat);
-        fabric.rotation.z=Math.PI/2;
-        fabric.position.set(x+(r-1)*0.42,1.3,-2);
-        fabric.castShadow=true;
-        scene.add(fabric);
-      }
+    // Exhaust
+    [0.6,-0.6].forEach(z=>{
+      const ex=new THREE.Mesh(new THREE.CylinderGeometry(0.07,0.07,0.2,8),chromeMat);
+      ex.rotation.z=Math.PI/2;
+      ex.position.set(2.05,0.28,z);
+      carGroup.add(ex);
     });
 
-    // ── DRESS STANDS / MANNEQUINS ──
-    const createDress=(x,z,color,isFemale)=>{
-      const g=new THREE.Group();
-      const bodyMat=new THREE.MeshStandardMaterial({color,metalness:0.0,roughness:0.85});
-      const skinMat=new THREE.MeshStandardMaterial({color:0xd4a090,metalness:0.0,roughness:0.8});
-      const goldMat=new THREE.MeshStandardMaterial({color:0xd4a843,metalness:0.9,roughness:0.1});
-
-      if(isFemale){
-        // Dress body (cone shape for elegance)
-        const dressMesh=new THREE.Mesh(new THREE.ConeGeometry(0.45,1.6,12),bodyMat);
-        dressMesh.position.y=1.6;
-        dressMesh.castShadow=true;
-        g.add(dressMesh);
-        // Torso
-        const torso=new THREE.Mesh(new THREE.CylinderGeometry(0.22,0.28,0.9,12),bodyMat);
-        torso.position.y=2.85;
-        g.add(torso);
-        // Gold dupatta accent
-        const duppatta=new THREE.Mesh(new THREE.TorusGeometry(0.35,0.06,8,20),new THREE.MeshStandardMaterial({color:0xd4a843,metalness:0.5,roughness:0.4}));
-        duppatta.position.y=2.9;
-        duppatta.rotation.x=Math.PI/3;
-        g.add(duppatta);
-      } else {
-        // Shalwar kameez - straighter
-        const kameez=new THREE.Mesh(new THREE.CylinderGeometry(0.3,0.32,1.8,12),bodyMat);
-        kameez.position.y=1.7;
-        kameez.castShadow=true;
-        g.add(kameez);
-        const torso=new THREE.Mesh(new THREE.CylinderGeometry(0.28,0.3,0.85,12),bodyMat);
-        torso.position.y=2.9;
-        g.add(torso);
-      }
-
-      // Head
-      const head=new THREE.Mesh(new THREE.SphereGeometry(0.22,16,16),skinMat);
-      head.position.y=3.65;
-      head.castShadow=true;
-      g.add(head);
-
-      // Stand
-      const stand=new THREE.Mesh(new THREE.CylinderGeometry(0.03,0.03,0.8,8),goldMat);
-      stand.position.y=0.4;
-      g.add(stand);
-      const base=new THREE.Mesh(new THREE.CylinderGeometry(0.3,0.3,0.06,16),goldMat);
-      base.position.y=0.03;
-      g.add(base);
-
-      g.position.set(x,0,z);
-      scene.add(g);
-      return g;
-    };
-
-    const m1=createDress(-7,  -3, 0xb91c1c, true);   // Women red
-    const m2=createDress(-4.5,-3, 0x1e40af, true);   // Women blue
-    const m3=createDress(4.5, -3, 0x15803d, false);  // Men green
-    const m4=createDress(7,   -3, 0x92400e, false);  // Men brown
-
-    // ── PILLARS ──
-    [-9,9].forEach(x=>{
-      const pillar=new THREE.Mesh(new THREE.CylinderGeometry(0.2,0.2,8,20),new THREE.MeshStandardMaterial({color:0xffffff,metalness:0.2,roughness:0.5}));
-      pillar.position.set(x,4,-6);
-      pillar.castShadow=true;
-      scene.add(pillar);
-      // Gold cap
-      const cap=new THREE.Mesh(new THREE.CylinderGeometry(0.3,0.2,0.3,20),new THREE.MeshStandardMaterial({color:0xd4a843,metalness:0.9,roughness:0.1}));
-      cap.position.set(x,8.15,-6);
-      scene.add(cap);
-      const base2=new THREE.Mesh(new THREE.CylinderGeometry(0.3,0.3,0.2,20),new THREE.MeshStandardMaterial({color:0xd4a843,metalness:0.9,roughness:0.1}));
-      base2.position.set(x,0.1,-6);
-      scene.add(base2);
+    // Headlights
+    [[1,0.05,0.7],[-1,0.05,0.7]].map(([dx])=>{}).length;
+    const hlMat=new THREE.MeshStandardMaterial({color:0xfff8dd,emissive:0xfff8dd,emissiveIntensity:1.5});
+    [0.65,-0.65].forEach(z=>{
+      const hl=new THREE.Mesh(new THREE.BoxGeometry(0.1,0.18,0.35),hlMat);
+      hl.position.set(-2.04,0.65,z);
+      carGroup.add(hl);
+      // DRL strip
+      const drl=new THREE.Mesh(new THREE.BoxGeometry(0.06,0.06,0.5),hlMat);
+      drl.position.set(-2.05,0.82,z);
+      carGroup.add(drl);
     });
 
-    // ── ARCH ──
-    const archMat=new THREE.MeshStandardMaterial({color:0xffffff,metalness:0.1,roughness:0.7});
-    const arch=new THREE.Mesh(new THREE.TorusGeometry(4,0.2,8,30,Math.PI),archMat);
-    arch.position.set(0,4,-9.5);
-    arch.rotation.z=Math.PI;
-    scene.add(arch);
-    // Gold arch trim
-    const archGold=new THREE.Mesh(new THREE.TorusGeometry(4,0.08,8,30,Math.PI),new THREE.MeshStandardMaterial({color:0xd4a843,metalness:0.9,roughness:0.1,emissive:0xd4a843,emissiveIntensity:0.2}));
-    archGold.position.set(0,4,-9.4);
-    archGold.rotation.z=Math.PI;
-    scene.add(archGold);
-
-    // ── LIGHTS ──
-    scene.add(new THREE.AmbientLight(0xfff8e7,0.8));
-
-    // Main warm light
-    const sun=new THREE.DirectionalLight(0xfff5e0,1.5);
-    sun.position.set(5,15,5);
-    sun.castShadow=true;
-    sun.shadow.mapSize.width=2048;
-    sun.shadow.mapSize.height=2048;
-    scene.add(sun);
-
-    // Spotlights on mannequins
-    const addSpot=(x,y,z,tx,ty,tz,color=0xfff8e7,intensity=3)=>{
-      const s=new THREE.SpotLight(color,intensity);
-      s.position.set(x,y,z);
-      s.angle=Math.PI/7;
-      s.penumbra=0.4;
-      s.castShadow=true;
-      scene.add(s);scene.add(s.target);
-      s.target.position.set(tx,ty,tz);
-      return s;
-    };
-    const sp1=addSpot(-7,8,-1,-7,2,-3,0xfff8e7,4);
-    const sp2=addSpot(-4.5,8,-1,-4.5,2,-3,0xffe8c0,3);
-    const sp3=addSpot(4.5,8,-1,4.5,2,-3,0xffe8c0,3);
-    const sp4=addSpot(7,8,-1,7,2,-3,0xfff8e7,4);
-    const spC=addSpot(0,10,2,0,2,-2,0xffffff,2);
-
-    // ── GOLD PARTICLES ──
-    const pGeo=new THREE.BufferGeometry();
-    const pCount=200;
-    const pPos=new Float32Array(pCount*3);
-    for(let i=0;i<pCount;i++){pPos[i*3]=(Math.random()-0.5)*20;pPos[i*3+1]=Math.random()*10;pPos[i*3+2]=(Math.random()-0.5)*15;}
-    pGeo.setAttribute("position",new THREE.BufferAttribute(pPos,3));
-    const pMat=new THREE.PointsMaterial({color:0xd4a843,size:0.05,transparent:true,opacity:0.5});
-    const particles=new THREE.Points(pGeo,pMat);
-    scene.add(particles);
-
-    // ── CHANDELIER ──
-    const chandGroup=new THREE.Group();
-    chandGroup.position.set(0,9,0);
-    const chandBase=new THREE.Mesh(new THREE.CylinderGeometry(0.3,0.3,0.1,20),new THREE.MeshStandardMaterial({color:0xd4a843,metalness:0.9,roughness:0.1}));
-    chandGroup.add(chandBase);
-    for(let i=0;i<8;i++){
-      const a=(i/8)*Math.PI*2;
-      const arm=new THREE.Mesh(new THREE.CylinderGeometry(0.02,0.02,1.2,8),new THREE.MeshStandardMaterial({color:0xd4a843,metalness:0.9,roughness:0.1}));
-      arm.position.set(Math.cos(a)*0.8,-.3,Math.sin(a)*0.8);
-      arm.rotation.z=Math.PI/4*Math.sign(Math.cos(a));
-      chandGroup.add(arm);
-      // Teardrop
-      const drop=new THREE.Mesh(new THREE.SphereGeometry(0.08,8,8),new THREE.MeshStandardMaterial({color:0xfff8e7,metalness:0.8,roughness:0.1,emissive:0xfff8e7,emissiveIntensity:0.5,transparent:true,opacity:0.9}));
-      drop.position.set(Math.cos(a)*1.2,-0.9,Math.sin(a)*1.2);
-      chandGroup.add(drop);
-    }
-    // Chandelier light
-    const chandLight=new THREE.PointLight(0xfff5e0,2,12);
-    chandLight.position.set(0,-0.5,0);
-    chandGroup.add(chandLight);
-    scene.add(chandGroup);
-
-    // ── CARPET ──
-    const carpetGeo=new THREE.PlaneGeometry(6,4);
-    const carpetMat=new THREE.MeshStandardMaterial({color:0xb91c1c,metalness:0.0,roughness:1.0});
-    const carpet=new THREE.Mesh(carpetGeo,carpetMat);
-    carpet.rotation.x=-Math.PI/2;
-    carpet.position.set(0,0.02,0);
-    scene.add(carpet);
-    // Gold carpet border
-    const cbMat=new THREE.MeshStandardMaterial({color:0xd4a843,metalness:0.5,roughness:0.3});
-    [[3.1,0,false],[0,2.1,true],[0,-2.1,true],[-3.1,0,false]].forEach(([bx,bz,rot])=>{
-      const cb=new THREE.Mesh(new THREE.PlaneGeometry(rot?6.2:0.1,rot?0.1:4.2),cbMat);
-      cb.rotation.x=-Math.PI/2;
-      cb.position.set(bx,0.025,bz);
-      scene.add(cb);
+    // Tail lights
+    const tlMat=new THREE.MeshStandardMaterial({color:0xff2200,emissive:0xff2200,emissiveIntensity:0.8});
+    [0.65,-0.65].forEach(z=>{
+      const tl=new THREE.Mesh(new THREE.BoxGeometry(0.08,0.18,0.3),tlMat);
+      tl.position.set(2.04,0.65,z);
+      carGroup.add(tl);
     });
 
-    // ── ANIMATION LOOP ──
+    // Car headlights as actual lights
+    const hl1=new THREE.SpotLight(0xfff5cc,8,40,Math.PI/9,0.3);
+    hl1.position.set(-2.1,0.7,0.6);
+    hl1.target.position.set(-20,0,0.6);
+    carGroup.add(hl1);carGroup.add(hl1.target);
+    const hl2=new THREE.SpotLight(0xfff5cc,8,40,Math.PI/9,0.3);
+    hl2.position.set(-2.1,0.7,-0.6);
+    hl2.target.position.set(-20,0,-0.6);
+    carGroup.add(hl2);carGroup.add(hl2.target);
+
+    carGroup.position.set(-0.5,0,28);
+    carGroup.rotation.y=Math.PI/2; // facing store direction
+    scene.add(carGroup);
+
+    // ── AMBIENT & BASE LIGHTS ──
+    scene.add(new THREE.AmbientLight(0x111122,0.4));
+    const moonLight=new THREE.DirectionalLight(0x334466,0.3);
+    moonLight.position.set(-10,20,10);
+    scene.add(moonLight);
+
+    // Store interior glow
+    const storeGlow=new THREE.PointLight(0xfff8e7,2,15);
+    storeGlow.position.set(0,4,-10);
+    scene.add(storeGlow);
+
+    // ── STARS ──
+    const starGeo=new THREE.BufferGeometry();
+    const starPos=new Float32Array(600*3);
+    for(let i=0;i<600*3;i+=3){starPos[i]=(Math.random()-0.5)*200;starPos[i+1]=Math.random()*60+10;starPos[i+2]=(Math.random()-0.5)*200;}
+    starGeo.setAttribute('position',new THREE.BufferAttribute(starPos,3));
+    scene.add(new THREE.Points(starGeo,new THREE.PointsMaterial({color:0xffffff,size:0.15,transparent:true,opacity:0.7})));
+
+    // ── ANIMATION ──
     let t=0;
-    let camZ=18,camY=4,camLookY=2;
-    const targetZ=6,targetY=2,targetLookY=1.5;
-    let entering=false;
+    let carZ=28; // start far
+    let carSpeed=0.18;
+    let camZ=35,camY=3,camLookY=4;
+    let signGlow=0;
+    let phase=0; // 0=car arriving, 1=car stopped, 2=sign lit, 3=zoom in
 
     const animate=()=>{
-      const id=requestAnimationFrame(animate);
-      t+=0.008;
+      requestAnimationFrame(animate);
+      t+=0.016;
 
-      // Camera slow zoom in
-      if(!entering){
-        camZ+=(targetZ-camZ)*0.008;
-        camY+=(targetY-camY)*0.008;
-        camLookY+=(targetLookY-camLookY)*0.008;
+      // Phase 0 — Car drives toward store
+      if(phase===0){
+        carZ-=carSpeed;
+        if(carZ>5) carSpeed=Math.min(carSpeed+0.002,0.22);
+        else carSpeed=Math.max(carSpeed-0.018,0); // brake
+        carGroup.position.z=carZ;
+        // Camera follows car
+        camera.position.set(-0.5,camY,camZ);
+        camera.lookAt(0,3,carZ-8);
+        if(carZ<=5.5){phase=1;setTimeout(()=>setPhase(1),100);}
       }
-      camera.position.set(Math.sin(t*0.15)*0.8,camY,camZ);
-      camera.lookAt(0,camLookY,0);
 
-      // Mannequin sway
-      [m1,m2,m3,m4].forEach((m,i)=>{m.rotation.y=Math.sin(t*0.4+i*1.2)*0.06;});
+      // Phase 1 — Car stopped, sign lights up
+      if(phase===1){
+        signGlow=Math.min(signGlow+0.03,1);
+        if(signGroup.userData.lights){
+          signGroup.userData.lights.forEach(l=>{l.intensity=signGlow*3.5;});
+        }
+        signGroup.children.forEach(c=>{if(c.material?.emissive){c.material.emissiveIntensity=0.15+signGlow*0.6;}});
+        camera.position.set(-0.5,camY,camZ);
+        camera.lookAt(0,7,-5);
+        if(signGlow>=1){phase=2;setTimeout(()=>setPhase(2),100);}
+      }
 
-      // Chandelier swing
-      chandGroup.rotation.z=Math.sin(t*0.3)*0.015;
-      chandLight.intensity=2+Math.sin(t*2)*0.3;
+      // Phase 2 — Camera zooms toward entrance
+      if(phase===2){
+        camZ=Math.max(camZ-0.12,4);
+        camY=Math.max(camY-0.015,2.2);
+        camera.position.set(0,camY,camZ);
+        camera.lookAt(0,3.5,-8);
+        if(camZ<=4){phase=3;setTimeout(()=>{setPhase(3);setShowBtn(true);},100);}
+      }
 
-      // Sign flicker
-      signGroup.children.forEach(c=>{if(c.material?.emissive){c.material.emissiveIntensity=0.25+Math.sin(t*3)*0.1;}});
+      // Phase 3 — Hold at entrance
+      if(phase>=3){
+        camera.position.set(Math.sin(t*0.2)*0.3,2.2,4);
+        camera.lookAt(0,3.5,-8);
+      }
 
-      // Spotlight intensity
-      [sp1,sp2,sp3,sp4].forEach((s,i)=>{s.intensity=3.5+Math.sin(t*0.8+i*0.5)*0.5;});
+      // Wheel spin
+      if(carZ>5.5){
+        carGroup.children.forEach(c=>{
+          if(c.geometry?.type==='CylinderGeometry'&&c.material?.roughness===1){
+            c.rotation.y+=0.18;
+          }
+        });
+      }
 
-      // Particles
-      particles.rotation.y+=0.0005;
-      const pa=particles.geometry.attributes.position.array;
-      for(let i=1;i<pCount*3;i+=3){pa[i]-=0.008;if(pa[i]<0)pa[i]=10;}
-      particles.geometry.attributes.position.needsUpdate=true;
+      // Store glow flicker
+      storeGlow.intensity=1.8+Math.sin(t*1.2)*0.2;
+      // Headlight shimmer
+      hl1.intensity=7.5+Math.sin(t*3)*0.5;
+      hl2.intensity=7.5+Math.sin(t*3+0.5)*0.5;
 
       renderer.render(scene,camera);
     };
     animate();
 
     // Phase timing
-    setTimeout(()=>setPhase(1),400);
-    setTimeout(()=>setPhase(2),1200);
-    setTimeout(()=>setPhase(3),2500);
-    setTimeout(()=>setPhase(4),4000);
+    setTimeout(()=>setPhase(0),200);
 
     // Resize
     const onResize=()=>{const w=el.clientWidth,h=el.clientHeight;camera.aspect=w/h;camera.updateProjectionMatrix();renderer.setSize(w,h);};
-    window.addEventListener("resize",onResize);
-
-    return()=>{
-      window.removeEventListener("resize",onResize);
-      try{el.removeChild(renderer.domElement);renderer.dispose();}catch(e){}
-    };
+    window.addEventListener('resize',onResize);
+    return()=>{window.removeEventListener('resize',onResize);try{el.removeChild(renderer.domElement);renderer.dispose();}catch(e){}};
   },[]);
 
+  const brand1=settings.intro_brand1||'JAMEEL';
+  const brand2=settings.intro_brand2||'FABRICS';
+  const subText=settings.intro_sub||'KUNJAH';
+  const tagline=settings.intro_tagline||TAGLINE;
+  const enterTxt=settings.intro_enter_btn||'Enter the Store';
+
   return(
-    <div style={{position:"fixed",inset:0,zIndex:99999,overflow:"hidden"}}>
-      <div ref={mountRef} style={{width:"100%",height:"100%"}}/>
+    <div style={{position:'fixed',inset:0,zIndex:99999,overflow:'hidden',background:'#020408'}}>
+      <div ref={mountRef} style={{width:'100%',height:'100%'}}/>
 
-      {/* Vignette overlay */}
-      <div style={{position:"absolute",inset:0,background:"radial-gradient(ellipse at center, transparent 40%, rgba(245,240,230,0.4) 100%)",pointerEvents:"none"}}/>
+      {/* Cinematic bars */}
+      <div style={{position:'absolute',top:0,left:0,right:0,height:'clamp(24px,5vh,48px)',background:'#000',zIndex:2,opacity:phase>=1?1:0,transition:'opacity 0.5s'}}/>
+      <div style={{position:'absolute',bottom:0,left:0,right:0,height:'clamp(24px,5vh,48px)',background:'#000',zIndex:2,opacity:phase>=1?1:0,transition:'opacity 0.5s'}}/>
 
-      {/* Text overlay */}
-      <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",pointerEvents:"none",zIndex:2}}>
-        <div style={{textAlign:"center",padding:"0 24px"}}>
-          {phase>=1&&<div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"clamp(10px,1.3vw,13px)",letterSpacing:"8px",color:"#b8922a",marginBottom:"12px",fontStyle:"italic",animation:"fadeUp 0.8s ease both"}}>
-            {settings?.intro_line1||"✦ EST. KUNJAH, DISTT GUJRAT ✦"}
-          </div>}
-
-          {phase>=1&&<div style={{animation:"fadeUp 0.8s ease 0.15s both"}}>
-            <div style={{fontFamily:"'Playfair Display',serif",fontSize:"clamp(36px,7vw,84px)",fontWeight:"900",color:"#1a1208",lineHeight:1,letterSpacing:"8px",textShadow:"0 2px 20px rgba(180,140,40,0.15)"}}>
-              {settings?.intro_brand1||"JAMEEL"}
+      {/* Brand text — appears with sign */}
+      {phase>=1&&(
+        <div style={{position:'absolute',inset:0,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',pointerEvents:'none',zIndex:3}}>
+          <div style={{textAlign:'center',padding:'0 24px',animation:'fadeUp 0.8s ease both'}}>
+            <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:'clamp(10px,1.2vw,13px)',letterSpacing:'8px',color:'#d4a843aa',marginBottom:'10px',fontStyle:'italic'}}>
+              {settings.intro_line1||'✦ EST. KUNJAH, DISTT GUJRAT ✦'}
             </div>
-            <div style={{fontFamily:"'Playfair Display',serif",fontSize:"clamp(36px,7vw,84px)",fontWeight:"900",color:"#1a1208",lineHeight:0.95,letterSpacing:"8px",textShadow:"0 2px 20px rgba(180,140,40,0.15)"}}>
-              {settings?.intro_brand2||"FABRICS"}
+            <div style={{fontFamily:"'Playfair Display',serif",fontSize:'clamp(32px,6vw,76px)',fontWeight:'900',color:'#faf8f3',lineHeight:1,letterSpacing:'8px',textShadow:'0 0 40px rgba(212,168,67,0.4)'}}>
+              {brand1}
             </div>
-            <div style={{fontFamily:"'Jost',sans-serif",fontSize:"clamp(10px,1.5vw,14px)",fontWeight:"300",color:"#1a1208aa",letterSpacing:"14px",marginTop:"6px",textTransform:"uppercase"}}>
-              STORE
+            <div style={{fontFamily:"'Playfair Display',serif",fontSize:'clamp(32px,6vw,76px)',fontWeight:'900',color:'#faf8f3',lineHeight:0.95,letterSpacing:'8px',textShadow:'0 0 40px rgba(212,168,67,0.4)'}}>
+              {brand2}
             </div>
-          </div>}
-
-          {phase>=2&&<div style={{display:"flex",alignItems:"center",gap:"10px",justifyContent:"center",margin:"16px 0 12px",animation:"fadeIn 0.8s ease both"}}>
-            <div style={{height:"1px",background:"linear-gradient(to right,transparent,#b8922a)",width:"60px"}}/>
-            <div style={{width:"5px",height:"5px",background:"#b8922a",transform:"rotate(45deg)",flexShrink:0}}/>
-            <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"clamp(14px,2vw,22px)",letterSpacing:"14px",color:"#b8922a",fontWeight:"400"}}>{settings?.intro_sub||"KUNJAH"}</div>
-            <div style={{width:"5px",height:"5px",background:"#b8922a",transform:"rotate(45deg)",flexShrink:0}}/>
-            <div style={{height:"1px",background:"linear-gradient(to left,transparent,#b8922a)",width:"60px"}}/>
-          </div>}
-
-          {phase>=3&&<div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"clamp(11px,1.4vw,14px)",color:"#8a7a5a",fontStyle:"italic",letterSpacing:"4px",animation:"fadeUp 0.7s ease both"}}>{settings?.intro_tagline||TAGLINE}</div>}
+            <div style={{display:'flex',alignItems:'center',gap:'10px',justifyContent:'center',margin:'12px 0 10px'}}>
+              <div style={{height:'1px',background:'linear-gradient(to right,transparent,#d4a843)',width:'50px'}}/>
+              <div style={{width:'5px',height:'5px',background:'#d4a843',transform:'rotate(45deg)',flexShrink:0}}/>
+              <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:'clamp(13px,2vw,20px)',letterSpacing:'14px',color:'#d4a843',fontWeight:'400'}}>{subText}</div>
+              <div style={{width:'5px',height:'5px',background:'#d4a843',transform:'rotate(45deg)',flexShrink:0}}/>
+              <div style={{height:'1px',background:'linear-gradient(to left,transparent,#d4a843)',width:'50px'}}/>
+            </div>
+            <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:'clamp(11px,1.3vw,14px)',color:'#d4a84377',fontStyle:'italic',letterSpacing:'4px'}}>{tagline}</div>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Enter button */}
-      {phase>=4&&<div style={{position:"absolute",bottom:"10%",left:0,right:0,display:"flex",flexDirection:"column",alignItems:"center",gap:"12px",zIndex:3}}>
-        <button onClick={onEnter} style={{background:"#1a1208",color:"#d4a843",border:"1px solid #d4a843",borderRadius:"0",padding:"16px 56px",fontSize:"12px",fontWeight:"600",letterSpacing:"4px",textTransform:"uppercase",cursor:"pointer",animation:"fadeUp 0.6s ease both",fontFamily:"'Jost',sans-serif",transition:"all 0.3s"}}
-          onMouseEnter={e=>{e.target.style.background="#d4a843";e.target.style.color="#1a1208";}}
-          onMouseLeave={e=>{e.target.style.background="#1a1208";e.target.style.color="#d4a843";}}>
-          {settings.intro_enter_btn||"Enter the Store"}
-        </button>
-        <div style={{fontSize:"10px",color:"#8a7a5a",letterSpacing:"3px",animation:"fadeIn 0.6s ease 0.2s both",fontFamily:"'Jost',sans-serif"}}>SCROLL DOWN TO EXPLORE</div>
-      </div>}
+      {showBtn&&(
+        <div style={{position:'absolute',bottom:'12%',left:0,right:0,display:'flex',flexDirection:'column',alignItems:'center',gap:'10px',zIndex:4,animation:'fadeUp 0.6s ease both'}}>
+          <button onClick={onEnter} style={{background:'transparent',color:'#d4a843',border:'1px solid #d4a843',padding:'14px 52px',fontSize:'11px',fontWeight:'600',letterSpacing:'4px',textTransform:'uppercase',cursor:'pointer',fontFamily:"'Jost',sans-serif",transition:'all 0.3s',backdropFilter:'blur(4px)'}}
+            onMouseEnter={e=>{e.target.style.background='#d4a843';e.target.style.color='#0f0c08';}}
+            onMouseLeave={e=>{e.target.style.background='transparent';e.target.style.color='#d4a843';}}>
+            {enterTxt}
+          </button>
+        </div>
+      )}
 
-      {settings.intro_skip!==false&&<button onClick={onEnter} style={{position:"absolute",top:"20px",right:"20px",background:"none",border:"1px solid #d4a84344",borderRadius:"0",padding:"6px 18px",color:"#8a7a5a",fontSize:"10px",cursor:"pointer",letterSpacing:"2px",zIndex:3,fontFamily:"'Jost',sans-serif",transition:"all 0.2s"}} onMouseEnter={e=>e.target.style.borderColor="#b8922a"} onMouseLeave={e=>e.target.style.borderColor="#d4a84344"}>
-        SKIP ›
-      </button>}
+      {/* Skip */}
+      {settings.intro_skip!==false&&(
+        <button onClick={onEnter} style={{position:'absolute',top:'24px',right:'24px',background:'none',border:'1px solid #d4a84333',padding:'5px 16px',color:'#d4a84377',fontSize:'10px',cursor:'pointer',letterSpacing:'2px',zIndex:5,fontFamily:"'Jost',sans-serif",transition:'all 0.2s'}} onMouseEnter={e=>e.target.style.color='#d4a843'} onMouseLeave={e=>e.target.style.color='#d4a84377'}>
+          SKIP ›
+        </button>
+      )}
     </div>
   );
 }
