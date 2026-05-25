@@ -1562,8 +1562,8 @@ export default function App(){
   const [show3D,setShow3D]=useState(true);
   const [fading,setFading]=useState(false);
   const handleEnter=useCallback(()=>{
-    setFading(true);                          // 3D fade out shuru
-    setTimeout(()=>setShow3D(false),600);     // 600ms baad 3D unmount
+    setFading(true);
+    setTimeout(()=>setShow3D(false),700);
   },[]);
   const [page,setPage]=useState("home");
   const [cat,setCat]=useState("All");
@@ -1639,22 +1639,18 @@ export default function App(){
       <style>{G}</style>
       <style>{`@media(min-width:769px){.show-mob{display:none!important}}`}</style>
 
-      {/* 3D Showroom — fixed overlay on top */}
+      {/* 3D overlay — covers website like a curtain, fades out on enter */}
       {show3D&&(
         <div style={{position:"fixed",inset:0,zIndex:99999,
           opacity:fading?0:1,
-          transition:"opacity 0.6s ease",
+          transition:"opacity 0.7s ease",
           pointerEvents:fading?"none":"auto"}}>
           <Showroom3D onEnter={handleEnter} settings={settings}/>
         </div>
       )}
 
-      {/* Website — ALWAYS visible, never hidden */}
-      <div style={{
-        opacity: fading||!show3D ? 1 : 0,
-        transition:"opacity 0.6s ease",
-        visibility:"visible"
-      }}>
+      {/* Website — ALWAYS fully visible underneath */}
+      <div>
         <AnnouncementBar texts={settings.announcements}/>
 
         {/* Discount Banner */}
