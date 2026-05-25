@@ -1562,8 +1562,8 @@ export default function App(){
   const [show3D,setShow3D]=useState(true);
   const [fading,setFading]=useState(false);
   const handleEnter=useCallback(()=>{
-    setFading(true);
-    setTimeout(()=>setShow3D(false),500);
+    setFading(true);                          // 3D fade out shuru
+    setTimeout(()=>setShow3D(false),600);     // 600ms baad 3D unmount
   },[]);
   const [page,setPage]=useState("home");
   const [cat,setCat]=useState("All");
@@ -1639,14 +1639,22 @@ export default function App(){
       <style>{G}</style>
       <style>{`@media(min-width:769px){.show-mob{display:none!important}}`}</style>
 
-      {/* 3D Showroom overlay */}
+      {/* 3D Showroom — fixed overlay on top */}
       {show3D&&(
-        <div style={{position:"fixed",inset:0,zIndex:99999,opacity:fading?0:1,transition:"opacity 0.5s ease",pointerEvents:fading?"none":"auto"}}>
+        <div style={{position:"fixed",inset:0,zIndex:99999,
+          opacity:fading?0:1,
+          transition:"opacity 0.6s ease",
+          pointerEvents:fading?"none":"auto"}}>
           <Showroom3D onEnter={handleEnter} settings={settings}/>
         </div>
       )}
-      {/* Website — ALWAYS renders in background */}
-      <div style={{visibility:show3D?"hidden":"visible",opacity:show3D?0:1,transition:"opacity 0.5s ease"}}>
+
+      {/* Website — ALWAYS visible, never hidden */}
+      <div style={{
+        opacity: fading||!show3D ? 1 : 0,
+        transition:"opacity 0.6s ease",
+        visibility:"visible"
+      }}>
         <AnnouncementBar texts={settings.announcements}/>
 
         {/* Discount Banner */}
