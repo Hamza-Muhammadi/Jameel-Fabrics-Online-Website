@@ -779,7 +779,7 @@ function Policies({settings}){
 }
 
 // ── LOCATION ──────────────────────────────────────────────────
-function Location(){
+function Location({settings={}}){
   return(
     <section id="location" style={{padding:"clamp(60px,8vw,100px) clamp(16px,5vw,80px)",background:"#fff",borderTop:"1px solid #d4a84322"}}>
       <div style={{maxWidth:"1000px",margin:"0 auto",textAlign:"center"}}>
@@ -1786,7 +1786,7 @@ export default function App(){
           <VideoSection settings={settings}/>
           <About settings={settings}/>
           <Policies settings={settings}/>
-          <Location/>
+          <Location settings={settings}/>
 
           {/* Features */}
           <section style={{padding:"clamp(48px,6vw,80px) clamp(16px,4vw,48px)",background:"#fff",borderTop:"1px solid #d4a84322"}}>
