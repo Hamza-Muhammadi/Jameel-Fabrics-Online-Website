@@ -1682,11 +1682,6 @@ export default function App(){
   useEffect(()=>LS.set("cart",cart),[cart]);
   useEffect(()=>LS.set("wishlist",wishlist),[wishlist]);
 
-  // Load products
-  useEffect(()=>{
-    if(!supabase)return;
-    supabase.from
-
   // Supabase Auth
   const [authUser, setAuthUser] = useState(null);
   const [showAuthModal, setShowAuthModal] = useState(null); // 'login' | 'register' | null
@@ -1714,7 +1709,10 @@ export default function App(){
     if(supabase) await supabase.auth.signOut();
     setAuthUser(null);
   }
-("products").select("*").eq("website_status","approved").eq("active",true).then(({data})=>{
+  // Load products from Supabase
+  useEffect(()=>{
+    if(!supabase) return;
+    supabase.from("products").select("*").eq("website_status","approved").eq("active",true).then(({data})=>{
       if(data?.length)setProducts(data.map(r=>({...r,salePrice:r.sale_price,costPrice:r.cost_price,offerPrice:r.offer_price,qtyType:r.qty_type,fabric_type:r.fabric_type||r.fabric,available_sizes:tryParse(r.available_sizes,[])})));
     });
     supabase.from("reviews").select("*").then(({data})=>{if(data?.length)setReviews(data);});
@@ -1880,7 +1878,6 @@ export default function App(){
         {showAuthModal&&<AuthModal mode={showAuthModal} onClose={()=>setShowAuthModal(null)} onSuccess={()=>setShowAuthModal(null)}/>}
         {showTrack&&<Tracking onClose={()=>setShowTrack(false)}/>}
         {showAccount&&authUser&&<AccountPage user={authUser} onBack={()=>setShowAccount(false)}/>}
-        {showAuthModal&&<AuthModal mode={showAuthModal} onClose={()=>setShowAuthModal(null)} onSuccess={()=>setShowAuthModal(null)}/>}
         {showAdmin&&<AdminPanel products={products} setProducts={setProducts} reviews={reviews} settings={settings} setSettings={setSettings} onClose={()=>setShowAdmin(false)}/>}
 
         {/* Admin Login — hidden */}
