@@ -107,7 +107,7 @@ function Intro({onEnter}){
         <line x1="44" y1="72" x2="44" y2="84" stroke="#111" strokeWidth="1" opacity=".6"/>
         <line x1="4" y1="44" x2="16" y2="44" stroke="#111" strokeWidth="1" opacity=".6"/>
         <line x1="72" y1="44" x2="84" y2="44" stroke="#111" strokeWidth="1" opacity=".6"/>
-        <text x="22" y="56" fontFamily="Playfair Display,serif" fontSize="24" fontWeight="900" fill="#111" opacity=".95">JF</text>
+        <text x="44" y="52" fontFamily="Playfair Display,serif" fontSize="22" fontWeight="900" fill="#111" opacity=".95" textAnchor="middle">JF</text>
       </svg>
     </div>
     <div style={{...fu(2),zIndex:1,textAlign:"center",lineHeight:.85}}>
@@ -607,6 +607,21 @@ function ReviewsSection(){
 
 
 /* ═══ BROWSING BADGE ═══ */
+
+/* ═══ FEATURE ICONS ═══ */
+function FeatureIcon({code}){
+  const icons={
+    "EX":<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#c9a84c" strokeWidth="1.5"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>,
+    "PQ":<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#c9a84c" strokeWidth="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>,
+    "WA":<svg width="22" height="22" viewBox="0 0 24 24" fill="#c9a84c"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a9 9 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413z"/></svg>,
+    "FD":<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#c9a84c" strokeWidth="1.5"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>,
+    "EE":<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#c9a84c" strokeWidth="1.5"><polyline points="1,4 1,10 7,10"/><polyline points="23,20 23,14 17,14"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>,
+    "TS":<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#c9a84c" strokeWidth="1.5"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>,
+  };
+  return icons[code]||<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#c9a84c" strokeWidth="1.5"><circle cx="12" cy="12" r="10"/></svg>;
+}
+
+
 function BrowsingBadge(){
   const[count,setCount]=useState(()=>Math.floor(Math.random()*12)+8);
   useEffect(()=>{
@@ -983,11 +998,18 @@ function Store({user,onLogout,onAccount,onAdmin}){
           </div>
         </div>
         <div className="rv" className="stat-grid" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:1}}>
-          {[["✨","Exclusive Designs","Har piece unique — dobara nahi milega"],["🧵","Premium Quality","Best fabric, best craftsmanship"],["📱","WhatsApp Order","Seedha message karo, ghar baithe"],["🚀","Fast Delivery","Pak Post se poore Pakistan mein"],["🔄","Easy Exchange","3 din mein — koi sawaal nahi"],["💯","Since 1975","50+ saal se families ka bharosa"]].map(([ic,n,d])=>(
-            <div key={n} style={{padding:"clamp(16px,2vw,24px)",textAlign:"center",background:"rgba(255,255,255,.04)",border:"1px solid rgba(255,255,255,.07)",transition:"background .3s",cursor:"default"}} onMouseEnter={e=>e.currentTarget.style.background="rgba(201,168,76,.1)"} onMouseLeave={e=>e.currentTarget.style.background="rgba(255,255,255,.04)"}>
-              <div style={{fontSize:20,marginBottom:7}}>{ic}</div>
-              <div style={{fontFamily:"'Playfair Display',serif",fontSize:12,fontWeight:700,color:"#fff",marginBottom:3}}>{n}</div>
-              <div style={{fontSize:9,color:"rgba(255,255,255,.4)",lineHeight:1.7}}>{d}</div>
+          {[
+              ["EX",settings.feat1_title||"Exclusive Designs",settings.feat1_desc||"Every piece is unique — once sold, never repeated. Each design crafted for the discerning."],
+              ["PQ",settings.feat2_title||"Premium Quality",settings.feat2_desc||"Finest Pakistani fabrics, personally inspected. We sell only what meets our own standards."],
+              ["WA",settings.feat3_title||"WhatsApp Orders",settings.feat3_desc||"Place your order directly via WhatsApp. Simple, fast and personal — no apps needed."],
+              ["FD",settings.feat4_title||"Nationwide Delivery",settings.feat4_desc||"Swift delivery across Pakistan via Pak Post. Your order, at your doorstep."],
+              ["EE",settings.feat5_title||"Easy Exchange",settings.feat5_desc||"Exchanges accepted within 3 days of delivery. Your satisfaction is our priority."],
+              ["TS",settings.feat6_title||"Trusted Since 1975",settings.feat6_desc||"Over five decades of serving families with premium fabrics. Our reputation is our promise."]
+            ].map(([ic,n,d])=>(
+            <div key={n} style={{padding:"clamp(14px,2vw,22px)",background:"rgba(255,255,255,.03)",border:"1px solid rgba(201,168,76,.12)",transition:"all .35s",cursor:"default"}} onMouseEnter={e=>{e.currentTarget.style.background="rgba(201,168,76,.07)";e.currentTarget.style.borderColor="rgba(201,168,76,.35)";}} onMouseLeave={e=>{e.currentTarget.style.background="rgba(255,255,255,.03)";e.currentTarget.style.borderColor="rgba(201,168,76,.12)";}}>
+              <div style={{marginBottom:12,display:"flex",alignItems:"center",justifyContent:"center",width:40,height:40,background:"rgba(201,168,76,.1)",borderRadius:8}}><FeatureIcon code={ic}/></div>
+              <div style={{fontFamily:"'Playfair Display',serif",fontSize:13,fontWeight:700,color:"#fff",marginBottom:5,letterSpacing:.3}}>{n}</div>
+              <div style={{fontSize:10,color:"rgba(255,255,255,.4)",lineHeight:1.8}}>{d}</div>
             </div>
           ))}
         </div>
@@ -1403,7 +1425,15 @@ function AContent({settings}){
     </div>
     {[{t:"Announcement Bar",fields:[["announcement","Messages (pipe | separated)"]]},{t:"Hero Section",fields:[["hlabel","Hero Label"],["hsub","Tagline"],["about","About Text",true]]},{t:"Video Section",fields:[["video_label","Label"],["video_title","Title"],["video_url","YouTube or MP4 URL"]]},
     {t:"Countdown Timer",fields:[["countdown_title","Sale Title (e.g. Eid Special Sale)"],["countdown_subtext","Sub Text (e.g. Up to 30% Off)"],["countdown_end","End Date & Time",false,true]]},
-    {t:"Our Story Section",fields:[["about","Story Text (website pe dikhega)",true],["story_stat1","Stat 1 (e.g. 50+)"],["story_stat1_label","Stat 1 Label (e.g. Years of Trust)"],["story_stat2","Stat 2"],["story_stat2_label","Stat 2 Label"],["story_stat3","Stat 3"],["story_stat3_label","Stat 3 Label"]]},
+    {t:"Our Story Section",fields:[["about","Story Text (website pe dikhega)",true],["story_stat1","Stat 1 Number (e.g. 50+)"],["story_stat1_label","Stat 1 Label"],["story_stat2","Stat 2 Number"],["story_stat2_label","Stat 2 Label"],["story_stat3","Stat 3 Number"],["story_stat3_label","Stat 3 Label"]]},
+    {t:"Our Features (6 Boxes in Dark Section)",fields:[
+      ["feat1_title","Feature 1 Title"],["feat1_desc","Feature 1 Description"],
+      ["feat2_title","Feature 2 Title"],["feat2_desc","Feature 2 Description"],
+      ["feat3_title","Feature 3 Title"],["feat3_desc","Feature 3 Description"],
+      ["feat4_title","Feature 4 Title"],["feat4_desc","Feature 4 Description"],
+      ["feat5_title","Feature 5 Title"],["feat5_desc","Feature 5 Description"],
+      ["feat6_title","Feature 6 Title"],["feat6_desc","Feature 6 Description"],
+    ]},
   ].map(sec=><ACard key={sec.t} style={{padding:20,marginBottom:16}}>
       <div style={{fontSize:15,fontWeight:600,marginBottom:14,color:"#111"}}>{sec.t}</div>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
