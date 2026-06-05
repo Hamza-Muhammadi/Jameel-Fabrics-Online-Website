@@ -2711,11 +2711,12 @@ class ErrorBoundary extends React.Component{
   componentDidCatch(e,info){console.error("AdminPanel error:",e,info);}
   render(){
     if(this.state.err)return(
-      <div style={{padding:40,textAlign:"center",fontFamily:"'Inter',sans-serif"}}>
-        <div style={{fontSize:40,marginBottom:12}}>⚠️</div>
-        <div style={{fontWeight:600,fontSize:16,color:"var(--t-text)",marginBottom:8}}>Something went wrong</div>
-        <div style={{fontSize:12,color:"#9ca3af",marginBottom:20,maxWidth:400,margin:"0 auto 20px"}}>{this.state.err.message}</div>
-        <button onClick={()=>this.setState({err:null})} style={{background:"#111",color:"#fff",border:"none",padding:"10px 24px",borderRadius:6,cursor:"pointer",fontSize:13}}>Try Again</button>
+      <div style={{padding:40,textAlign:"center",fontFamily:"sans-serif",minHeight:"100vh",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",background:"#faf9f7"}}>
+        <div style={{fontSize:48,marginBottom:16}}>⚠️</div>
+        <div style={{fontWeight:700,fontSize:18,color:"#111",marginBottom:8}}>Kuch masla aa gaya</div>
+        <div style={{fontSize:12,color:"#9ca3af",marginBottom:8,maxWidth:400,textAlign:"center"}}>{this.state.err?.message||"Unknown error"}</div>
+        <div style={{fontSize:10,color:"#ccc",marginBottom:24,maxWidth:500,textAlign:"center",wordBreak:"break-all"}}>{this.state.err?.stack?.slice(0,200)}</div>
+        <button onClick={()=>{this.setState({err:null});try{localStorage.clear();}catch{}window.location.reload();}} style={{background:"#111",color:"#fff",border:"none",padding:"12px 28px",borderRadius:6,cursor:"pointer",fontSize:13,fontWeight:600}}>Clear & Reload</button>
       </div>
     );
     return this.props.children;
@@ -3769,8 +3770,13 @@ export default function App(){
   const[showAdminLogin,setShowAdminLogin]=useState(false);
   const[user,setUser]=useState(null);
   const[siteTheme,setSiteTheme]=useState(()=>{
-    try{const t=localStorage.getItem("jf_theme");return SITE_THEMES[t]?t:"Black Gold";}
-    catch{return "Black Gold";}
+    try{
+      const t=localStorage.getItem("jf_theme");
+      if(t&&SITE_THEMES[t])return t;
+      // If stored theme no longer exists, clear and use default
+      localStorage.removeItem("jf_theme");
+    }catch{}
+    return "Black Gold";
   });
   const TH=SITE_THEMES[siteTheme]||SITE_THEMES["Black Gold"];
   function applyTheme(name){
@@ -3798,7 +3804,7 @@ export default function App(){
     return()=>window.removeEventListener("hashchange",checkHash);
   },[]);
   async function logout(){if(sb)await sb.auth.signOut();setUser(null);toast("Logged out");setView("store");}
-  return(<>
+  return(<ErrorBoundary>
     <style>{G}</style>
     {view==="intro"&&<ErrorBoundary><Intro onEnter={()=>setView("store")} siteTheme={TH} themeName={siteTheme}/></ErrorBoundary>}
     {view==="store"&&<ErrorBoundary><Store user={user} onLogout={logout} onAccount={()=>user?setView("account"):null} onAdmin={()=>setShowAdminLogin(true)} siteTheme={TH} themeName={siteTheme}/></ErrorBoundary>}
@@ -3806,5 +3812,5 @@ export default function App(){
     {view==="admin"&&<ErrorBoundary><AdminPanel onExit={()=>setView("store")}/></ErrorBoundary>}
     {showAdminLogin&&<AdminLogin onSuccess={()=>{setShowAdminLogin(false);setView("admin");}} onCancel={()=>setShowAdminLogin(false)}/>}
     <Toasts list={toasts}/>
-  </>);
+  </ErrorBoundary>);
 }
