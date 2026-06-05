@@ -1540,6 +1540,36 @@ function MysteryGiftSection({settings,user,onAuth,products}){
 }
 
 
+
+// ── Brand Grouped Product Grid ────────────────────────────────
+function BrandGroupedGrid({filtered,cat,brandFilter,addToCart,toggleWish,wish,openModal,savePriceDrop}){
+  if(cat==="All"||brandFilter!=="All"){
+    return filtered.map((prod,i)=><PCard key={prod.id} prod={prod} idx={i} onAdd={addToCart} onWish={toggleWish} wished={wish.has(prod.id)} onOpenModal={openModal} onPriceDrop={savePriceDrop}/>);
+  }
+  const brands=[...new Set(filtered.map(p=>p.brand).filter(Boolean))];
+  const noBrand=filtered.filter(p=>!p.brand);
+  if(brands.length<2){
+    return filtered.map((prod,i)=><PCard key={prod.id} prod={prod} idx={i} onAdd={addToCart} onWish={toggleWish} wished={wish.has(prod.id)} onOpenModal={openModal} onPriceDrop={savePriceDrop}/>);
+  }
+  return(
+    <>
+      {brands.map(brand=>(
+        <React.Fragment key={brand}>
+          <div style={{gridColumn:"1/-1",paddingBottom:8,borderBottom:"2px solid #e8dfc0",marginBottom:4,marginTop:8,display:"flex",alignItems:"center",gap:12}}>
+            <span style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"clamp(15px,2vw,20px)",fontWeight:600,color:"#1a1612",letterSpacing:1}}>{brand}</span>
+            <span style={{fontSize:9,color:"#c9a84c",letterSpacing:2,textTransform:"uppercase",background:"rgba(201,168,76,.08)",padding:"2px 8px",borderRadius:10}}>{filtered.filter(p=>p.brand===brand).length} items</span>
+          </div>
+          {filtered.filter(p=>p.brand===brand).map((prod,i)=>
+            <PCard key={prod.id} prod={prod} idx={i} onAdd={addToCart} onWish={toggleWish} wished={wish.has(prod.id)} onOpenModal={openModal} onPriceDrop={savePriceDrop}/>
+          )}
+        </React.Fragment>
+      ))}
+      {noBrand.map((prod,i)=><PCard key={prod.id} prod={prod} idx={i} onAdd={addToCart} onWish={toggleWish} wished={wish.has(prod.id)} onOpenModal={openModal} onPriceDrop={savePriceDrop}/>)}
+    </>
+  );
+}
+
+
 function Store({user,onLogout,onAccount,onAdmin,siteTheme,themeName}){
   const TH=siteTheme||SITE_THEMES["Black Gold"];
   // Apply theme CSS variables
@@ -1886,13 +1916,14 @@ function Store({user,onLogout,onAccount,onAdmin,siteTheme,themeName}){
         </div>
       </div>
 
+      {/* Brand grouping handled by BrandBar above */}
       {filtered.length===0?(
         <div style={{textAlign:"center",padding:64,color:"#8a7f76"}}><div style={{fontSize:40,marginBottom:12,opacity:.4}}>📦</div><div style={{fontFamily:"'Playfair Display',serif",fontSize:18,color:"#7a6e65"}}>No products found</div></div>
       ):(
         <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(210px,1fr))",gap:"clamp(12px,1.5vw,18px)",padding:"0 clamp(16px,4vw,60px) clamp(56px,7vw,80px)",maxWidth:1500,margin:"0 auto"}}>
           {prods.length===0&&!filtered.length
             ?[...Array(8)].map((_,i)=><PCardSkeleton key={i}/>)
-            :filtered.map((prod,i)=><PCard key={prod.id} prod={prod} idx={i} onAdd={addToCart} onWish={toggleWish} wished={wish.has(prod.id)} onOpenModal={openModal}/>)
+            :<BrandGroupedGrid filtered={filtered} cat={cat} brandFilter={brandFilter} addToCart={addToCart} toggleWish={toggleWish} wish={wish} openModal={openModal} savePriceDrop={savePriceDrop}/>
           }
         </div>
       )}
@@ -1990,7 +2021,6 @@ function Store({user,onLogout,onAccount,onAdmin,siteTheme,themeName}){
         </div>
       </div>
     </section>
-<SubscriptionBox settings={settings} user={user} onAuth={setAuthModal}/>
     {/* FOOTER */}
     <footer style={{background:"#0a0907",color:"#e0dbd3",padding:"clamp(52px,6vw,80px) clamp(16px,4vw,60px) 28px"}}>
       <div className="footer-grid" style={{display:"grid",gridTemplateColumns:"1.8fr 1fr 1fr 1fr",gap:"clamp(24px,3.5vw,52px)",marginBottom:52,maxWidth:1200,margin:"0 auto 52px"}}>
@@ -2070,6 +2100,314 @@ function AccountPage({user,onBack}){
     </div>
   </div>);
 }
+
+// ── Shared Settings Save Hook ─────────────────────────────────
+function useSettingsSave(settings){
+  const[f,setF]=useState({});
+  const[saving,setSaving]=useState(false);
+  const[saved,setSaved]=useState(false);
+  useEffect(()=>setF({...settings}),[settings]);
+  function updateF(k,v){setF(p=>({...p,[k]:v}));}
+  async function save(keys){
+    if(!sb)return;setSaving(true);
+    const toSave=keys?keys.map(k=>({k,v:f[k]})):Object.entries(f).map(([k,v])=>({k,v}));
+    await Promise.all(toSave.map(({k,v})=>sb.from("website_settings").upsert({key:k,value:String(v||"")},{onConflict:"key"})));
+    setSaving(false);setSaved(true);setTimeout(()=>setSaved(false),2500);
+  }
+  return{f,setF,updateF,saving,saved,save};
+}
+
+// ── Save Button component ─────────────────────────────────────
+function ASaveBtn({saving,saved,onClick}){
+  return(
+    <ABtn onClick={onClick} style={{background:saved?"#16a34a":saving?"#6b7280":"#111",color:"#fff",minWidth:90,transition:"background .3s"}}>
+      {saving?"💾 Saving...":saved?"✅ Saved":"💾 Save"}
+    </ABtn>
+  );
+}
+
+// ── THEME SETTINGS ────────────────────────────────────────────
+function AThemeSettings({settings,onSaved}){
+  const{f,updateF,saving,saved,save}=useSettingsSave(settings);
+  async function applyTheme(){
+    await save(["site_theme"]);
+    if(f.site_theme&&typeof localStorage!=="undefined"){
+      localStorage.setItem("jf_theme",f.site_theme);
+      window.dispatchEvent(new CustomEvent("jf-theme-change",{detail:f.site_theme}));
+    }
+    onSaved&&onSaved();
+  }
+  return(
+    <div>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20,flexWrap:"wrap",gap:12}}>
+        <AH title="🎨 Theme" sub="Website ka color theme badlo"/>
+        <ASaveBtn saving={saving} saved={saved} onClick={applyTheme}/>
+      </div>
+      <ACard style={{padding:20}}>
+        <div style={{fontSize:13,color:"#6b7280",marginBottom:14}}>Theme select karo — landing page aur website dono change ho jayenge</div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(155px,1fr))",gap:10}}>
+          {Object.entries(SITE_THEMES).map(([name,t])=>{
+            const isActive=(f.site_theme||"Black Gold")===name;
+            return(
+              <div key={name} onClick={()=>updateF("site_theme",name)} style={{border:`2px solid ${isActive?"#111":"#e5e7eb"}`,borderRadius:8,overflow:"hidden",cursor:"pointer",transition:"all .2s",boxShadow:isActive?"0 4px 12px rgba(0,0,0,.15)":"none"}}>
+                <div style={{height:44,background:t.dark,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
+                  <div style={{width:12,height:12,borderRadius:"50%",background:t.accent}}/>
+                  <span style={{fontSize:10,color:t.darkText,letterSpacing:1,fontWeight:700,textTransform:"uppercase",opacity:.8}}>{name}</span>
+                </div>
+                <div style={{height:28,background:t.bg,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
+                  <div style={{width:8,height:8,borderRadius:"50%",background:t.accent,opacity:.5}}/>
+                  <span style={{fontSize:9,color:t.muted}}>{isActive?"✓ Active":"Click to select"}</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </ACard>
+    </div>
+  );
+}
+
+// ── SHOP SETTINGS ─────────────────────────────────────────────
+function AShopSettings({settings,onSaved}){
+  const{f,updateF,saving,saved,save}=useSettingsSave(settings);
+  return(
+    <div>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20,flexWrap:"wrap",gap:12}}>
+        <AH title="🏪 Shop Settings" sub="Store info aur display"/>
+        <ASaveBtn saving={saving} saved={saved} onClick={()=>save(["store_name","announcement","hlabel","hsub","about","addr1","addr2","phone","wa_number","hours","insta","fb","tiktok","sold_count","price_max","free_shipping_min","free_shipping_active"])}/>
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>
+        <ACard style={{padding:18}}>
+          <div style={{fontWeight:700,fontSize:13,marginBottom:12}}>Store Info</div>
+          {[["store_name","Store Name"],["announcement","Announcement Bar"],["addr1","Address Line 1"],["addr2","Address Line 2"],["phone","Phone"],["wa_number","WhatsApp Number"],["hours","Working Hours"]].map(([k,l])=>(
+            <div key={k} style={{marginBottom:10}}><ALbl c={l}/><AI value={f[k]||""} onChange={e=>updateF(k,e.target.value)}/></div>
+          ))}
+        </ACard>
+        <ACard style={{padding:18}}>
+          <div style={{fontWeight:700,fontSize:13,marginBottom:12}}>Display</div>
+          {[["hlabel","Hero Label"],["hsub","Hero Tagline"],["sold_count","Sold Count"],["price_max","Max Price Range"],["free_shipping_min","Free Shipping Min (Rs.)"]].map(([k,l])=>(
+            <div key={k} style={{marginBottom:10}}><ALbl c={l}/><AI value={f[k]||""} onChange={e=>updateF(k,e.target.value)}/></div>
+          ))}
+          <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",fontSize:13,marginTop:4}}>
+            <input type="checkbox" checked={f.free_shipping_active!=="false"} onChange={e=>updateF("free_shipping_active",e.target.checked?"true":"false")} style={{accentColor:"#c9a84c",width:16,height:16}}/>
+            Enable Free Shipping Bar
+          </label>
+          <div style={{marginTop:12}}><ALbl c="Social — Instagram"/><AI value={f.insta||""} onChange={e=>updateF("insta",e.target.value)}/></div>
+          <div style={{marginTop:10}}><ALbl c="Social — Facebook"/><AI value={f.fb||""} onChange={e=>updateF("fb",e.target.value)}/></div>
+          <div style={{marginTop:10}}><ALbl c="Social — TikTok"/><AI value={f.tiktok||""} onChange={e=>updateF("tiktok",e.target.value)}/></div>
+        </ACard>
+      </div>
+    </div>
+  );
+}
+
+// ── SUBSCRIPTION SETTINGS ─────────────────────────────────────
+function ASubSettings({settings,onSaved}){
+  const{f,updateF,saving,saved,save}=useSettingsSave(settings);
+  const tiers=[["Silver","sub_silver_price","sub_silver_items","sub_silver_benefit","1500","1-2 Fabrics","Starter"],["Gold","sub_gold_price","sub_gold_items","sub_gold_benefit","2500","2-3 Fabrics","Premium"],["Platinum","sub_platinum_price","sub_platinum_items","sub_platinum_benefit","4000","3-4 Fabrics","Exclusive"],["Diamond","sub_diamond_price","sub_diamond_items","sub_diamond_benefit","6000","4-5 Fabrics","Ultra Luxury"]];
+  return(
+    <div>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20,flexWrap:"wrap",gap:12}}>
+        <AH title="📦 Subscription Box" sub="Mystery box tiers aur settings"/>
+        <ASaveBtn saving={saving} saved={saved} onClick={()=>save()}/>
+      </div>
+      <ACard style={{padding:18,marginBottom:16}}>
+        <div style={{fontWeight:700,fontSize:13,marginBottom:12}}>Box Dispatch Dates</div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+          <div><ALbl c="Date 1 (day)"/><AI type="number" value={f.sub_date1||"12"} onChange={e=>updateF("sub_date1",e.target.value)}/></div>
+          <div><ALbl c="Date 2 (day)"/><AI type="number" value={f.sub_date2||"28"} onChange={e=>updateF("sub_date2",e.target.value)}/></div>
+        </div>
+        <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",fontSize:13,marginTop:10}}>
+          <input type="checkbox" checked={f.sub_active!=="false"} onChange={e=>updateF("sub_active",e.target.checked?"true":"false")} style={{accentColor:"#c9a84c",width:16,height:16}}/>
+          Show Subscription Box on website
+        </label>
+      </ACard>
+      {tiers.map(([tier,pk,ik,bk,dp,di,db])=>(
+        <ACard key={tier} style={{padding:16,marginBottom:12}}>
+          <div style={{fontWeight:700,fontSize:13,marginBottom:10}}>{tier==="Gold"?"🥇":tier==="Silver"?"🥈":tier==="Platinum"?"💠":"💎"} {tier}</div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}>
+            <div><ALbl c="Price (Rs.)"/><AI type="number" value={f[pk]||dp} onChange={e=>updateF(pk,e.target.value)}/></div>
+            <div><ALbl c="Items"/><AI value={f[ik]||di} onChange={e=>updateF(ik,e.target.value)}/></div>
+            <div><ALbl c="Benefit"/><AI value={f[bk]||db} onChange={e=>updateF(bk,e.target.value)}/></div>
+          </div>
+        </ACard>
+      ))}
+    </div>
+  );
+}
+
+// ── WA SETTINGS ───────────────────────────────────────────────
+function AWASettings({settings,onSaved}){
+  const{f,updateF,saving,saved,save}=useSettingsSave(settings);
+  const templates=[["wa_greeting","WA Button Greeting","Assalam! I am interested in your fabrics."],["wa_order_msg","Order Confirmation","Your order confirmed! Total: {amount}. Delivery in 3-5 days."],["wa_review_req","Review Request","Thank you for shopping at Jameel Fabrics! Your feedback means a lot."],["wa_udhaar_reminder","Payment Reminder","Assalam! Gentle reminder about your balance at Jameel Fabrics."]];
+  return(
+    <div>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20,flexWrap:"wrap",gap:12}}>
+        <AH title="💬 WhatsApp Templates" sub="Customer ko jane wale messages"/>
+        <ASaveBtn saving={saving} saved={saved} onClick={()=>save()}/>
+      </div>
+      {templates.map(([k,l,ph])=>(
+        <ACard key={k} style={{padding:16,marginBottom:12}}>
+          <ALbl c={l}/>
+          <textarea value={f[k]||""} onChange={e=>updateF(k,e.target.value)} rows={3} placeholder={ph} style={{width:"100%",padding:"8px 10px",border:"1px solid #e5e7eb",borderRadius:6,fontSize:12,outline:"none",resize:"vertical",fontFamily:"inherit",boxSizing:"border-box",marginTop:4}}/>
+        </ACard>
+      ))}
+    </div>
+  );
+}
+
+// ── BILL TEMPLATES CRUD ───────────────────────────────────────
+function ABillTemplates(){
+  const[templates,setTemplates]=useState([]);
+  const[edit,setEdit]=useState(null);
+  const[form,setForm]=useState({name:"",header:"",footer:"",show_logo:true,show_address:true,show_date:true,accent:"#c9a84c"});
+  const[loading,setLoading]=useState(true);
+
+  useEffect(()=>{
+    if(!sb)return;
+    sb.from("website_settings").select("value").eq("key","bill_templates").single()
+      .then(({data})=>{
+        if(data?.value){try{setTemplates(JSON.parse(data.value));}catch{}}
+        setLoading(false);
+      });
+  },[]);
+
+  async function saveAll(list){
+    if(!sb)return;
+    await sb.from("website_settings").upsert({key:"bill_templates",value:JSON.stringify(list)},{onConflict:"key"});
+  }
+
+  function newTemplate(){setEdit("new");setForm({name:"Default",header:"*{store}*\n{addr}\nTel: {phone}",footer:"Thank you for shopping!\nJazakAllah Khair 🙏",show_logo:true,show_address:true,show_date:true,accent:"#c9a84c"});}
+
+  async function save(){
+    if(!form.name)return alert("Name required");
+    let updated;
+    if(edit==="new")updated=[...templates,{...form,id:Date.now()}];
+    else updated=templates.map(t=>t.id===edit?{...form,id:t.id}:t);
+    setTemplates(updated);await saveAll(updated);setEdit(null);toast("Template saved!","success");
+  }
+
+  async function del(id){
+    if(!confirm("Delete this template?"))return;
+    const updated=templates.filter(t=>t.id!==id);
+    setTemplates(updated);await saveAll(updated);
+  }
+
+  return(
+    <div>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20,flexWrap:"wrap",gap:12}}>
+        <AH title="🧾 Bill Templates" sub="WhatsApp bill ka format edit karo"/>
+        <ABtn onClick={newTemplate} style={{background:"#111",color:"#fff"}}>+ New Template</ABtn>
+      </div>
+
+      {loading?<div style={{textAlign:"center",padding:32,color:"#9ca3af"}}>Loading...</div>:(
+        templates.length===0?
+          <ACard style={{padding:32,textAlign:"center",color:"#9ca3af"}}>
+            <div style={{fontSize:32,marginBottom:8}}>🧾</div>
+            <div>No templates yet — create one</div>
+            <ABtn onClick={newTemplate} style={{background:"#111",color:"#fff",marginTop:12}}>+ Create Template</ABtn>
+          </ACard>:
+          <div style={{display:"grid",gap:12}}>
+            {templates.map(t=>(
+              <ACard key={t.id} style={{padding:16}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:8}}>
+                  <div>
+                    <div style={{fontWeight:700,fontSize:14,color:"#111"}}>{t.name}</div>
+                    <div style={{fontSize:11,color:"#6b7280",marginTop:2,whiteSpace:"pre-line",maxHeight:40,overflow:"hidden"}}>{t.header?.slice(0,80)}...</div>
+                  </div>
+                  <div style={{display:"flex",gap:6}}>
+                    <ABtn onClick={()=>{setEdit(t.id);setForm({...t});}} style={{background:"#111",color:"#fff",padding:"5px 12px",fontSize:11}}>✏️ Edit</ABtn>
+                    <ABtn onClick={()=>del(t.id)} style={{background:"#fee2e2",color:"#dc2626",padding:"5px 12px",fontSize:11}}>🗑️ Del</ABtn>
+                  </div>
+                </div>
+              </ACard>
+            ))}
+          </div>
+      )}
+
+      {edit&&(
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",padding:16}} onClick={()=>setEdit(null)}>
+          <div style={{background:"#fff",borderRadius:12,padding:24,width:"100%",maxWidth:500,maxHeight:"90vh",overflowY:"auto"}} onClick={e=>e.stopPropagation()}>
+            <div style={{fontWeight:700,fontSize:15,marginBottom:16}}>{edit==="new"?"New Template":"Edit Template"}</div>
+            <div style={{marginBottom:10}}><ALbl c="Template Name"/><AI value={form.name} onChange={e=>setForm({...form,name:e.target.value})} placeholder="e.g. Default Bill"/></div>
+            <div style={{marginBottom:10}}>
+              <ALbl c="Header (use {store},{addr},{phone})"/>
+              <textarea value={form.header||""} onChange={e=>setForm({...form,header:e.target.value})} rows={3} style={{width:"100%",padding:"8px 10px",border:"1px solid #e5e7eb",borderRadius:6,fontSize:12,outline:"none",resize:"vertical",fontFamily:"monospace",boxSizing:"border-box"}}/>
+            </div>
+            <div style={{marginBottom:10}}>
+              <ALbl c="Footer"/>
+              <textarea value={form.footer||""} onChange={e=>setForm({...form,footer:e.target.value})} rows={2} style={{width:"100%",padding:"8px 10px",border:"1px solid #e5e7eb",borderRadius:6,fontSize:12,outline:"none",resize:"vertical",fontFamily:"monospace",boxSizing:"border-box"}}/>
+            </div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:14}}>
+              {[["show_logo","Show Logo"],["show_address","Show Address"],["show_date","Show Date"]].map(([k,l])=>(
+                <label key={k} style={{display:"flex",alignItems:"center",gap:6,cursor:"pointer",fontSize:12}}>
+                  <input type="checkbox" checked={!!form[k]} onChange={e=>setForm({...form,[k]:e.target.checked})} style={{accentColor:"#c9a84c"}}/>
+                  {l}
+                </label>
+              ))}
+              <div><ALbl c="Accent Color"/><input type="color" value={form.accent||"#c9a84c"} onChange={e=>setForm({...form,accent:e.target.value})} style={{width:"100%",height:32,border:"1px solid #e5e7eb",borderRadius:4,cursor:"pointer"}}/></div>
+            </div>
+            <div style={{background:"#f9fafb",borderRadius:6,padding:12,marginBottom:14,fontSize:11,color:"#6b7280",lineHeight:1.6}}>
+              <strong>Variables:</strong> {"{store}"} = shop name · {"{addr}"} = address · {"{phone}"} = phone · {"{date}"} = date · {"{bill_num}"} = bill number · {"{items}"} = item list · {"{total}"} = total · {"{customer}"} = customer name
+            </div>
+            <div style={{display:"flex",gap:8}}>
+              <ABtn onClick={save} style={{flex:1,background:"#111",color:"#fff"}}>Save Template</ABtn>
+              <ABtn onClick={()=>setEdit(null)} style={{background:"#f3f4f6",color:"#374151"}}>Cancel</ABtn>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── DELIVERY SETTINGS ─────────────────────────────────────────
+function ADeliverySettings({settings,onSaved}){
+  const{f,updateF,saving,saved,save}=useSettingsSave(settings);
+  return(
+    <div>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20,flexWrap:"wrap",gap:12}}>
+        <AH title="🚚 Delivery Settings" sub="Shipping aur delivery options"/>
+        <ASaveBtn saving={saving} saved={saved} onClick={()=>save(["free_shipping_min","free_shipping_active","delivery_note","eid_show","eid_date","eid_title","eid_subtitle","birthday_discount","birthday_active"])}/>
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>
+        <ACard style={{padding:18}}>
+          <div style={{fontWeight:700,fontSize:13,marginBottom:12}}>Free Shipping</div>
+          <div style={{marginBottom:10}}><ALbl c="Minimum Amount (Rs.)"/><AI type="number" value={f.free_shipping_min||"2000"} onChange={e=>updateF("free_shipping_min",e.target.value)}/></div>
+          <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",fontSize:13}}>
+            <input type="checkbox" checked={f.free_shipping_active!=="false"} onChange={e=>updateF("free_shipping_active",e.target.checked?"true":"false")} style={{accentColor:"#c9a84c",width:16,height:16}}/>
+            Enable free shipping bar
+          </label>
+        </ACard>
+        <ACard style={{padding:18}}>
+          <div style={{fontWeight:700,fontSize:13,marginBottom:12}}>Birthday Discount</div>
+          <div style={{marginBottom:10}}><ALbl c="Discount %"/><AI type="number" value={f.birthday_discount||"10"} onChange={e=>updateF("birthday_discount",e.target.value)}/></div>
+          <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",fontSize:13}}>
+            <input type="checkbox" checked={f.birthday_active!=="false"} onChange={e=>updateF("birthday_active",e.target.checked?"true":"false")} style={{accentColor:"#c9a84c",width:16,height:16}}/>
+            Enable birthday discount
+          </label>
+        </ACard>
+        <ACard style={{padding:18,gridColumn:"1/-1"}}>
+          <div style={{fontWeight:700,fontSize:13,marginBottom:12}}>🌙 Eid Countdown</div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+            <div><ALbl c="Eid Date"/><AI type="date" value={f.eid_date||""} onChange={e=>updateF("eid_date",e.target.value)}/></div>
+            <div><ALbl c="Title"/><AI value={f.eid_title||"Eid Collection"} onChange={e=>updateF("eid_title",e.target.value)}/></div>
+            <div style={{gridColumn:"1/-1"}}><ALbl c="Subtitle"/><AI value={f.eid_subtitle||""} onChange={e=>updateF("eid_subtitle",e.target.value)}/></div>
+          </div>
+          <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",fontSize:13,marginTop:8}}>
+            <input type="checkbox" checked={f.eid_show==="true"} onChange={e=>updateF("eid_show",e.target.checked?"true":"false")} style={{accentColor:"#c9a84c",width:16,height:16}}/>
+            Show Eid countdown
+          </label>
+        </ACard>
+      </div>
+    </div>
+  );
+}
+
+// ── ThemeIc SVG ───────────────────────────────────────────────
+const ThemeIc=()=><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>;
+
+
 // ── Error Boundary ────────────────────────────────────────────
 // ── Brand Dropdown (uses saved brands per category) ──────────
 function BrandDropdown({cat,value,onChange}){
@@ -2370,12 +2708,20 @@ function AAlerts({alerts,onRefresh}){
 }
 function AProducts({products,onRefresh}){
   const[editP,setEditP]=useState(null);const[form,setForm]=useState({});
+  const[prodTab,setProdTab]=useState("web"); // "web" | "erp"
   function open(p){setEditP(p);setForm({...p,sizes:(p.sizes||[]).join(",")});}
   async function save(){
     if(!sb||!form.name){toast("Name required","error");return;}
     const data={...form,sizes:form.sizes?form.sizes.split(",").map(s=>s.trim()).filter(Boolean):[],active:form.active!==false,website_status:form.website_status||"approved",sale_price:parseFloat(form.sale_price||form.price)||0,price:parseFloat(form.sale_price||form.price)||0};
-    if(editP?.id&&editP.id!=="new")await sb.from("products").update(data).eq("id",editP.id);
-    else await sb.from("products").insert({...data,website_status:"approved",active:true});
+    let err=null;
+    if(editP?.id&&editP.id!=="new"){
+      const res=await sb.from("products").update(data).eq("id",editP.id);
+      err=res.error;
+    }else{
+      const res=await sb.from("products").insert({...data,website_status:"approved",active:true,created_at:new Date().toISOString()});
+      err=res.error;
+    }
+    if(err){toast("Error: "+err.message,"error");return;}
     toast("Saved!","success");setEditP(null);onRefresh();
   }
   async function toggle(p){if(!sb)return;await sb.from("products").update({active:!p.active}).eq("id",p.id);onRefresh();}
@@ -2727,7 +3073,6 @@ function ASubs({subs}){
 
 function ASettings({settings}){
   const[f,setF]=useState({});const[np,setNp]=useState("");const[cp,setCp]=useState("");
-  const[settTab,setSettTab]=useState("theme");
   useEffect(()=>setF({...settings}),[settings]);
   const[saving,setSaving]=useState(false);
   const[saved,setSaved]=useState(false);
@@ -2741,12 +3086,7 @@ function ASettings({settings}){
         {saving?"Saving...":saved?"✓ Saved":"💾 Save All"}
       </ABtn>
     </div>
-    {/* Tabs */}
-    <div style={{display:"flex",gap:4,flexWrap:"wrap",marginBottom:20,borderBottom:"1px solid #e5e7eb",paddingBottom:12}}>
-      {[["theme","🎨 Theme"],["content","📝 Content"],["shop","🏪 Shop"],["subscription","📦 Subscription"],["whatsapp","💬 WhatsApp"],["delivery","🚚 Delivery"],["other","⚙️ Other"]].map(([t,l])=>(
-        <button key={t} onClick={()=>setSettTab(t)} style={{padding:"6px 14px",fontSize:11,fontWeight:600,border:`1px solid ${settTab===t?"#111":"#e5e7eb"}`,background:settTab===t?"#111":"transparent",color:settTab===t?"#fff":"#6b7280",borderRadius:4,cursor:"pointer",transition:"all .15s"}}>{l}</button>
-      ))}
-    </div>
+
     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:20,alignItems:"start"}}>
       <div>
         <ACard style={{padding:20,marginBottom:16}}>
@@ -2816,33 +3156,7 @@ function ASettings({settings}){
         </ACard>
       </div>
 
-      {/* ── THEME SECTION ── */}
-      <ACard style={{padding:20,marginBottom:16,gridColumn:"1/-1"}}>
-        <div style={{fontSize:15,fontWeight:600,marginBottom:16,color:"#111",display:"flex",alignItems:"center",gap:8}}>
-          🎨 Website Theme
-          <span style={{fontSize:10,color:"#9ca3af",fontWeight:400}}>— Changes landing page + entire website colors</span>
-        </div>
-        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(160px,1fr))",gap:10}}>
-          {Object.entries(SITE_THEMES).map(([name,t])=>{
-            const isActive=f.site_theme===name;
-            return(
-              <div key={name} onClick={()=>updateF("site_theme",name)} style={{
-                border:`2px solid ${isActive?"#111":"#e5e7eb"}`,
-                borderRadius:8,overflow:"hidden",cursor:"pointer",
-                transition:"all .2s",
-              }}>
-                <div style={{height:40,background:t.dark,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
-                  <div style={{width:12,height:12,borderRadius:"50%",background:t.accent}}/>
-                  <span style={{fontSize:9,color:t.darkText,letterSpacing:1,fontWeight:700,textTransform:"uppercase",opacity:.7}}>{name}</span>
-                </div>
-                <div style={{height:24,background:t.bg,display:"flex",alignItems:"center",justifyContent:"center"}}>
-                  <span style={{fontSize:8,color:t.muted,letterSpacing:1}}>{isActive?"✓ Active":"Click to apply"}</span>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </ACard>
+/ACard>
 
       {/* ── HERO BANNER ── */}
       <ACard style={{padding:20,marginBottom:16}}>
@@ -3122,7 +3436,14 @@ function AdminPanel({onExit}){
     {id:"content",ic:<EditIc/>,lbl:"Website Content"},
     {id:"subscribers",ic:<MailIc/>,lbl:"Subscribers"},
     {id:"brands",ic:<BrandIc/>,lbl:"Brands"},
-    {id:"settings",ic:<SettIc/>,lbl:"Settings"},
+    {section:"Settings"},
+    {id:"theme",ic:<ThemeIc/>,lbl:"🎨 Theme"},
+    {id:"shop_settings",ic:<SettIc/>,lbl:"🏪 Shop"},
+    {id:"sub_settings",ic:<ProdIc/>,lbl:"📦 Subscription"},
+    {id:"wa_settings",ic:<OrdIc/>,lbl:"💬 WhatsApp"},
+    {id:"bill_templates",ic:<EditIc/>,lbl:"🧾 Bill Templates"},
+    {id:"delivery",ic:<MailIc/>,lbl:"🚚 Delivery"},
+    {id:"settings",ic:<SettIc/>,lbl:"⚙️ General"},
   ];
 
   const TITLES={dashboard:"Dashboard",pending:"Pending Approval",alerts:"Stock Alerts",products:"Products",orders:"Orders",coupons:"Coupons",reviews:"Reviews",sold:"Sold Counter",analytics:"Analytics",content:"Website Content",subscribers:"Subscribers",settings:"Settings"};
@@ -3141,6 +3462,12 @@ function AdminPanel({onExit}){
     subscribers:()=><ASubs subs={subs||[]}/>,
     settings:()=><ASettings settings={settings||{}}/>,
     brands:()=><ABrands/>,
+    theme:()=><AThemeSettings settings={settings||{}} onSaved={refresh}/>,
+    shop_settings:()=><AShopSettings settings={settings||{}} onSaved={refresh}/>,
+    sub_settings:()=><ASubSettings settings={settings||{}} onSaved={refresh}/>,
+    wa_settings:()=><AWASettings settings={settings||{}} onSaved={refresh}/>,
+    bill_templates:()=><ABillTemplates/>,
+    delivery:()=><ADeliverySettings settings={settings||{}} onSaved={refresh}/>,
   };
 
   return(
