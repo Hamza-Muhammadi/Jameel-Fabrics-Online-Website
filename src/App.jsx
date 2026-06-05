@@ -211,6 +211,28 @@ input[type=range].price-slider::-webkit-slider-thumb{-webkit-appearance:none;wid
 /* AI suggester */
 .ai-typing::after{content:"▌";animation:blink .7s infinite;}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+
+
+/* ── Full Website Theme System ─────────────────── */
+body{background:var(--jf-bg,#faf9f7);color:var(--jf-text,#1a1612)}
+.jf-nav-bar{background:var(--jf-card,#fff)!important;border-bottom:1px solid var(--jf-border,#e8dfc0)!important}
+.jf-topbar-store-name{color:var(--jf-text,#1a1612)!important}
+.jf-topbar-sub{color:var(--jf-accent,#c9a84c)!important}
+.jf-cat-bar{background:var(--jf-card,#fff)!important;border-bottom:1px solid var(--jf-border,#e8dfc0)!important}
+.jf-cat-btn{color:var(--jf-muted,#9a8f83)!important;font-family:'Jost',sans-serif}
+.jf-cat-btn.active{color:var(--jf-text,#1a1612)!important;border-bottom:2px solid var(--jf-text,#1a1612)!important}
+.jf-prods-section{background:var(--jf-bg,#faf9f7)!important}
+.jf-pcard{background:var(--jf-card,#fff)!important;border:1px solid var(--jf-border,#e8dfc0)!important}
+.jf-pcard-name{color:var(--jf-text,#1a1612)!important}
+.jf-price{color:var(--jf-accent,#c9a84c)!important}
+.jf-section-bg{background:var(--jf-bg,#faf9f7)!important}
+.jf-section-alt{background:var(--jf-surface,#f5f0e8)!important}
+.jf-footer{background:var(--jf-dark,#1a1612)!important;color:var(--jf-dark-text,#f5efe0)!important}
+.jf-btn-primary{background:var(--jf-dark,#1a1612)!important;color:var(--jf-dark-text,#f5efe0)!important}
+.jf-btn-accent{background:var(--jf-accent,#c9a84c)!important;color:var(--jf-dark,#1a1612)!important}
+.jf-search-bar{background:var(--jf-surface,#f5f0e8)!important;border:1px solid var(--jf-border,#e8dfc0)!important}
+.jf-filter-row{background:var(--jf-card,#fff)!important;border-bottom:1px solid var(--jf-surface,#f5f0e8)!important}
+.jf-brand-bar{background:var(--jf-card,#fff)!important;border-bottom:1px solid var(--jf-border,#e8dfc0)!important}
 `;
 let _tf=null;
 function useToast(){const[list,setList]=useState([]);_tf=useCallback((msg,type="")=>{const id=Date.now();setList(t=>[...t,{id,msg,type}]);setTimeout(()=>setList(t=>t.filter(x=>x.id!==id)),3200);},[]);return list;}
@@ -680,130 +702,101 @@ function SubscriptionBox({settings,user,onAuth}){
 
 function Intro({onEnter,siteTheme,themeName}){
   const TH=siteTheme||SITE_THEMES["Blue Beige"];
-  const[tickerText,setTickerText]=useState("Gul Ahmed · Alkaram · Sana Safinaz · Khaadi · Bonanza · Sapphire · Nishat · Orient");
-  const[step,setStep]=useState(0);
+  const[tickerText,setTickerText]=useState("Gul Ahmed · Bonanza · Sapphire · Khaadi · Sana Safinaz · Alkaram · Nishat · Orient");
   useEffect(()=>{
-    const ts=[100,400,800,1200,1800,2400,3000].map((d,i)=>setTimeout(()=>setStep(i+1),d));
     if(sb)sb.from("website_settings").select("value").eq("key","ticker_brands").single().then(({data})=>{if(data?.value)setTickerText(data.value);});
-    return()=>ts.forEach(clearTimeout);
   },[]);
-
   const brands=tickerText.split("·").map(b=>b.trim()).filter(Boolean);
   const ticker=[...brands,...brands];
 
-  const sl=(s,d=0)=>({opacity:step>=s?1:0,transform:step>=s?"translateX(0)":"translateX(-25px)",transition:`opacity .9s ${d}s ease,transform .9s ${d}s ease`});
-  const sr=(s,d=0)=>({opacity:step>=s?1:0,transform:step>=s?"translateX(0)":"translateX(25px)",transition:`opacity .9s ${d}s ease,transform .9s ${d}s ease`});
+  // Inject exact CSS from user's design, adapted to current theme
+  const css=`
+    .jf-intro *{margin:0;padding:0;box-sizing:border-box}
+    .jf-intro{position:fixed;inset:0;z-index:9999;font-family:'Manrope',sans-serif;overflow:hidden;background:${TH.iBg}}
+    .jf-left{position:absolute;inset:0;background:${TH.iLeft};clip-path:polygon(0 0,58% 0,45% 100%,0 100%);display:flex;flex-direction:column;justify-content:center;padding:4rem 3.5rem;overflow:hidden}
+    .jf-left::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(-45deg,transparent,transparent 40px,rgba(255,255,255,0.02) 40px,rgba(255,255,255,0.02) 41px)}
+    .jf-left-inner{position:relative;z-index:1;max-width:360px}
+    .jf-tag{font-size:0.6rem;letter-spacing:4px;text-transform:uppercase;color:${TH.iAccent};margin-bottom:2rem;display:flex;align-items:center;gap:0.8rem;animation:jfSlideR 0.9s ease both}
+    .jf-tag::before{content:'';width:30px;height:1px;background:${TH.iAccent};opacity:0.5}
+    .jf-brand{font-family:'Syne',sans-serif;font-size:clamp(3rem,7vw,6.5rem);font-weight:800;line-height:0.88;color:${TH.iBrand};margin-bottom:0.5rem;animation:jfSlideR 0.9s 0.1s ease both}
+    .jf-brand .jf-accent{color:transparent;-webkit-text-stroke:2px ${TH.iAccent}}
+    .jf-sub{font-size:0.82rem;font-weight:300;color:${TH.iBrand}44;line-height:1.8;margin:1.5rem 0 2.5rem;max-width:260px;animation:jfSlideR 0.9s 0.2s ease both}
+    .jf-stats{display:flex;gap:1.5rem;margin-bottom:2.5rem;animation:jfSlideR 0.9s 0.3s ease both}
+    .jf-sitem{border-left:2px solid ${TH.iAccent};padding-left:0.8rem;opacity:0.8}
+    .jf-snum{font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:800;color:${TH.iBrand}}
+    .jf-slabel{font-size:0.55rem;letter-spacing:2px;text-transform:uppercase;color:${TH.iBrand}40}
+    .jf-loc{font-size:0.55rem;letter-spacing:2px;text-transform:uppercase;color:${TH.iBrand}28;display:flex;align-items:center;gap:0.5rem;animation:jfSlideR 0.9s 0.4s ease both}
+    .jf-right{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;align-items:flex-end;padding:4rem 4rem 4rem 50%;text-align:center}
+    .jf-right-inner{width:100%;max-width:360px}
+    .jf-bg-text{position:absolute;font-family:'Syne',sans-serif;font-size:20vw;font-weight:800;color:${TH.iEnter};opacity:0.04;top:50%;left:42%;transform:translateY(-50%);white-space:nowrap;pointer-events:none;letter-spacing:-5px;line-height:1;user-select:none}
+    .jf-eyebrow{font-size:0.6rem;letter-spacing:4px;text-transform:uppercase;color:${TH.iEyebrow};margin-bottom:2rem;animation:jfSlideL 0.9s 0.2s ease both}
+    .jf-enter{font-family:'Syne',sans-serif;font-size:clamp(2.2rem,5vw,4.5rem);font-weight:800;color:${TH.iEnter};line-height:1;margin-bottom:0.3em;animation:jfSlideL 0.9s 0.3s ease both;letter-spacing:-2px}
+    .jf-store{font-family:'Syne',sans-serif;font-size:clamp(2.2rem,5vw,4.5rem);font-weight:800;color:${TH.iStore};line-height:1;margin-bottom:2.5rem;animation:jfSlideL 0.9s 0.4s ease both;letter-spacing:-2px}
+    .jf-btn{display:block;background:${TH.iBtn};color:${TH.iBtnText};border:${TH.iBtn==="transparent"?"1px solid "+TH.iBrand+"44":"none"};padding:1.1rem 3rem;font-family:'Syne',sans-serif;font-size:0.85rem;font-weight:800;letter-spacing:3px;text-transform:uppercase;cursor:pointer;position:relative;transition:transform 0.2s,opacity 0.2s;animation:jfSlideL 0.9s 0.5s ease both;width:100%}
+    .jf-btn::after{content:'→';position:absolute;right:1.5rem;top:50%;transform:translateY(-50%);font-size:1.2rem;transition:transform 0.2s}
+    .jf-btn:hover{transform:scale(1.02);opacity:0.9}
+    .jf-btn:hover::after{transform:translateY(-50%) translateX(5px)}
+    .jf-divider{width:80%;height:1px;background:${TH.iEnter};opacity:0.1;margin:1.5rem auto;animation:jfSlideL 0.9s 0.6s ease both}
+    .jf-ticker-wrap{animation:jfSlideL 0.9s 0.7s ease both;border:1px solid ${TH.iTag};background:${TH.iTag};padding:0.7rem 0;overflow:hidden;width:100%}
+    .jf-ticker-label{font-size:0.45rem;letter-spacing:3px;text-transform:uppercase;color:${TH.iEyebrow};text-align:center;margin-bottom:0.5rem}
+    .jf-ticker-track{display:flex;gap:1.5rem;animation:jfTickScroll 12s linear infinite;white-space:nowrap;width:max-content}
+    .jf-ticker-brand{font-family:'Syne',sans-serif;font-size:0.65rem;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:${TH.iTicker}}
+    .jf-ticker-sep{color:${TH.iTag};font-size:0.5rem}
+    .jf-tags{position:absolute;bottom:2rem;right:0;width:55%;display:flex;justify-content:center;gap:0.6rem;flex-wrap:wrap;padding:0 2rem;z-index:1;animation:jfSlideL 0.9s 0.8s ease both}
+    .jf-rtag{font-size:0.5rem;letter-spacing:2px;text-transform:uppercase;color:${TH.iEyebrow};border:1px solid ${TH.iTag};padding:0.25rem 0.7rem}
+    @keyframes jfSlideR{from{opacity:0;transform:translateX(-25px)}to{opacity:1;transform:translateX(0)}}
+    @keyframes jfSlideL{from{opacity:0;transform:translateX(25px)}to{opacity:1;transform:translateX(0)}}
+    @keyframes jfTickScroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+  `;
 
   return(
-    <div style={{position:"fixed",inset:0,zIndex:9999,overflow:"hidden",fontFamily:"'Manrope',sans-serif"}}>
+    <div className="jf-intro">
+      <style>{css}</style>
 
-      {/* ── LEFT PANEL ─────────────────────────── */}
-      <div style={{
-        position:"absolute",inset:0,
-        background:TH.iLeft,
-        clipPath:"polygon(0 0,58% 0,45% 100%,0 100%)",
-        display:"flex",flexDirection:"column",justifyContent:"center",
-        padding:"clamp(2rem,5vw,4rem) clamp(2rem,4vw,3.5rem)",
-        overflow:"hidden",
-      }}>
-        <div style={{position:"absolute",inset:0,backgroundImage:`repeating-linear-gradient(-45deg,transparent,transparent 40px,rgba(255,255,255,0.02) 40px,rgba(255,255,255,0.02) 41px)`,pointerEvents:"none"}}/>
-        <div style={{position:"relative",zIndex:1,maxWidth:"360px"}}>
-
-          {/* Tag */}
-          <div style={{...sl(1,0),fontSize:".58rem",letterSpacing:"4px",textTransform:"uppercase",color:TH.iAccent,marginBottom:"2rem",display:"flex",alignItems:"center",gap:".8rem"}}>
-            <span style={{display:"inline-block",width:"30px",height:"1px",background:TH.iAccent,opacity:.5,flexShrink:0}}/>
-            Est. 1975 · Kunjah, Distt. Gujrat
+      {/* LEFT */}
+      <div className="jf-left">
+        <div className="jf-left-inner">
+          <div className="jf-tag">Est. 1975 · Kunjah, Distt. Gujrat</div>
+          <h1 className="jf-brand">JAMEEL<br/><span className="jf-accent">FABRICS</span></h1>
+          <p className="jf-sub">Premium branded clothing for Men, Women & Kids. Trusted by families since 1975.</p>
+          <div className="jf-stats">
+            <div className="jf-sitem"><div className="jf-snum">50+</div><div className="jf-slabel">Yrs Trust</div></div>
+            <div className="jf-sitem"><div className="jf-snum">500+</div><div className="jf-slabel">Products</div></div>
+            <div className="jf-sitem"><div className="jf-snum">PK</div><div className="jf-slabel">Delivery</div></div>
           </div>
-
-          {/* Brand name */}
-          <h1 style={{...sl(2,.1),fontFamily:"'Syne',sans-serif",fontSize:"clamp(3rem,7vw,6.5rem)",fontWeight:800,lineHeight:.88,color:TH.iBrand,marginBottom:".4rem"}}>
-            JAMEEL<br/>
-            <span style={{color:"transparent",WebkitTextStroke:`2px ${TH.iAccent}`,opacity:.6}}>FABRICS</span>
-          </h1>
-
-          {/* Sub text */}
-          <p style={{...sl(3,.2),fontSize:".82rem",fontWeight:300,color:`${TH.iBrand}44`,lineHeight:1.8,margin:"1.5rem 0 2.5rem",maxWidth:"260px"}}>
-            Premium branded clothing for Men, Women & Kids. Trusted by families since 1975.
-          </p>
-
-          {/* Stats */}
-          <div style={{...sl(4,.3),display:"flex",gap:"1.5rem",marginBottom:"2.5rem"}}>
-            {[["50+","Yrs Trust"],["500+","Products"],["Premium","Quality"]].map(([n,l])=>(
-              <div key={l} style={{borderLeft:`2px solid ${TH.iAccent}`,paddingLeft:".8rem",opacity:.8}}>
-                <div style={{fontFamily:"'Syne',sans-serif",fontSize:"1.3rem",fontWeight:800,color:TH.iBrand,lineHeight:1}}>{n}</div>
-                <div style={{fontSize:".5rem",letterSpacing:"2px",textTransform:"uppercase",color:`${TH.iBrand}40`,marginTop:"2px"}}>{l}</div>
-              </div>
-            ))}
-          </div>
-
-          {/* Location */}
-          <div style={{...sl(5,.4),fontSize:".52rem",letterSpacing:"2px",textTransform:"uppercase",color:`${TH.iBrand}28`,display:"flex",alignItems:"center",gap:".5rem"}}>
-            📍 Kunjah, District Gujrat, Punjab
-          </div>
+          <div className="jf-loc">📍 Kunjah, District Gujrat, Punjab</div>
         </div>
       </div>
 
-      {/* ── RIGHT PANEL ────────────────────────── */}
-      <div style={{
-        position:"absolute",inset:0,
-        background:TH.iBg,
-        display:"flex",flexDirection:"column",justifyContent:"center",alignItems:"flex-end",
-        padding:"clamp(2rem,5vw,4rem) clamp(2rem,4vw,4rem) clamp(2rem,5vw,4rem) 50%",
-      }}>
-        {/* BG watermark */}
-        <div style={{position:"absolute",fontFamily:"'Syne',sans-serif",fontSize:"20vw",fontWeight:800,color:TH.iEnter,opacity:.04,top:"50%",left:"42%",transform:"translateY(-50%)",whiteSpace:"nowrap",pointerEvents:"none",letterSpacing:"-5px",userSelect:"none"}}>JF</div>
-
-        <div style={{width:"100%",maxWidth:"360px",position:"relative",zIndex:1,textAlign:"center"}}>
-
-          {/* Eyebrow */}
-          <div style={{...sr(1,.2),fontSize:".58rem",letterSpacing:"4px",textTransform:"uppercase",color:TH.iEyebrow,marginBottom:"2rem"}}>
-            Shop the full collection
-          </div>
-
-          {/* Enter text */}
-          <div style={{...sr(2,.3),fontFamily:"'Syne',sans-serif",fontSize:"clamp(2.2rem,5vw,4.5rem)",fontWeight:800,color:TH.iEnter,lineHeight:1,marginBottom:".3em",letterSpacing:"-2px"}}>
-            Enter
-          </div>
-          <div style={{...sr(3,.4),fontFamily:"'Syne',sans-serif",fontSize:"clamp(2.2rem,5vw,4.5rem)",fontWeight:800,color:TH.iStore,lineHeight:1,marginBottom:"2.5rem",letterSpacing:"-2px"}}>
-            The Store
-          </div>
-
-          {/* CTA Button */}
-          <button onClick={onEnter} style={{...sr(4,.5),display:"block",width:"100%",background:TH.iBtn,color:TH.iBtnText,border:`1px solid ${TH.iBtn==="transparent"?TH.iBrand+"66":TH.iBtn}`,padding:"1.1rem 3rem",fontFamily:"'Syne',sans-serif",fontSize:".85rem",fontWeight:800,letterSpacing:"3px",textTransform:"uppercase",cursor:"pointer",position:"relative",transition:"transform .2s,opacity .2s"}}>
-            Shop Now →
-          </button>
-
-          {/* Divider */}
-          <div style={{...sr(5,.6),width:"80%",height:"1px",background:TH.iEnter,opacity:.1,margin:"1.5rem auto"}}/>
-
-          {/* Brand Ticker */}
-          <div style={{...sr(5,.7),border:`1px solid ${TH.iTag}`,background:TH.iTag,padding:".7rem 0",overflow:"hidden",width:"100%",position:"relative"}}>
-            <div style={{fontSize:".42rem",letterSpacing:"3px",textTransform:"uppercase",color:TH.iEyebrow,textAlign:"center",marginBottom:".5rem"}}>Brands we carry</div>
-            <div style={{overflow:"hidden"}}>
-              <div style={{display:"flex",gap:"1.5rem",animation:"jfTick 12s linear infinite",whiteSpace:"nowrap",width:"max-content"}}>
-                {ticker.map((b,i)=>(
-                  <span key={i} style={{display:"inline-flex",alignItems:"center",gap:"1.5rem"}}>
-                    <span style={{fontFamily:"'Syne',sans-serif",fontSize:".62rem",fontWeight:800,letterSpacing:"2px",textTransform:"uppercase",color:TH.iTicker}}>{b}</span>
-                    {i<ticker.length-1&&<span style={{color:TH.iTag,fontSize:".5rem",opacity:.6}}>·</span>}
-                  </span>
-                ))}
-              </div>
+      {/* RIGHT */}
+      <div className="jf-right">
+        <div className="jf-bg-text">JF</div>
+        <div className="jf-right-inner">
+          <div className="jf-eyebrow">Shop the full collection</div>
+          <div className="jf-enter">Enter</div>
+          <div className="jf-store">The Store</div>
+          <button className="jf-btn" onClick={onEnter}>Shop Now</button>
+          <div className="jf-divider"/>
+          <div className="jf-ticker-wrap">
+            <div className="jf-ticker-label">Brands we carry</div>
+            <div className="jf-ticker-track">
+              {ticker.map((b,i)=>(
+                <span key={i} style={{display:"inline-flex",alignItems:"center",gap:"1.5rem"}}>
+                  <span className="jf-ticker-brand">{b}</span>
+                  <span className="jf-ticker-sep">·</span>
+                </span>
+              ))}
             </div>
           </div>
         </div>
       </div>
 
-      {/* Bottom tags */}
-      <div style={{position:"absolute",bottom:"2rem",right:0,width:"55%",display:"flex",justifyContent:"center",gap:".6rem",flexWrap:"wrap",padding:"0 2rem",zIndex:1,...sr(6,.8)}}>
+      {/* BOTTOM TAGS */}
+      <div className="jf-tags">
         {["100% Authentic","50+ Brands","WhatsApp Orders","Nationwide Delivery"].map(t=>(
-          <span key={t} style={{fontSize:".48rem",letterSpacing:"2px",textTransform:"uppercase",color:TH.iEyebrow,border:`1px solid ${TH.iTag}`,padding:".25rem .7rem"}}>{t}</span>
+          <span key={t} className="jf-rtag">{t}</span>
         ))}
       </div>
-
-      <style>{`
-        @keyframes jfTick{from{transform:translateX(0)}to{transform:translateX(-50%)}}
-        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Manrope:wght@300;400;500&display=swap');
-      `}</style>
     </div>
   );
 }
@@ -1602,17 +1595,16 @@ function Store({user,onLogout,onAccount,onAdmin,siteTheme,themeName}){
   const TH=siteTheme||SITE_THEMES["Blue Beige"];
   // Apply ALL theme CSS variables on every render
   useEffect(()=>{
+    // Set CSS vars for full website theming
     const r=document.documentElement.style;
-    r.setProperty("--jf-bg",TH.bg);
-    r.setProperty("--jf-accent",TH.accent);
-    r.setProperty("--jf-text",TH.text);
-    r.setProperty("--jf-muted",TH.muted);
-    r.setProperty("--jf-border",TH.border);
-    r.setProperty("--jf-dark",TH.dark);
-    r.setProperty("--jf-card",TH.card);
-    r.setProperty("--jf-surface",TH.surface);
-    r.setProperty("--jf-dark-text",TH.darkText);
+    const vars={
+      "--jf-bg":TH.bg,"--jf-card":TH.card,"--jf-surface":TH.surface,
+      "--jf-text":TH.text,"--jf-muted":TH.muted,"--jf-border":TH.border,
+      "--jf-accent":TH.accent,"--jf-dark":TH.dark,"--jf-dark-text":TH.darkText,
+    };
+    Object.entries(vars).forEach(([k,v])=>r.setProperty(k,v));
     document.body.style.background=TH.bg;
+    document.body.style.color=TH.text;
   },[TH]);
   const settings=useSettings();
   const[prods,setProds]=useState([]);
@@ -1763,8 +1755,8 @@ function Store({user,onLogout,onAccount,onAdmin,siteTheme,themeName}){
     {/* NAV */}
     <nav style={{position:"sticky",top:0,zIndex:100,background:"rgba(250,249,247,.97)",backdropFilter:"blur(24px)",borderBottom:"1px solid #e8e4df",height:64,display:"flex",alignItems:"center",padding:"0 clamp(14px,3vw,52px)",gap:12,boxShadow:"0 1px 16px rgba(0,0,0,.06)"}}>
       <button onClick={()=>{setCat("All");window.scrollTo({top:0,behavior:"smooth"});}} style={{cursor:"pointer",flexShrink:0,background:"none",border:"none",textAlign:"left",marginRight:"auto",padding:0}}>
-        <div style={{fontFamily:"'Playfair Display',serif",fontSize:"clamp(13px,1.5vw,17px)",fontWeight:900,letterSpacing:"clamp(2px,1vw,6px)",color:"#111",lineHeight:1.1}}>{settings.store_name||"JAMEEL FABRICS"}</div>
-        <div style={{fontSize:7,letterSpacing:"clamp(2px,.8vw,5px)",color:"#c9a84c",fontFamily:"'Cormorant Garamond',serif",fontStyle:"italic",lineHeight:1,fontWeight:500}}>KUNJAH · PUNJAB</div>
+        <div style={{fontFamily:"'Playfair Display',serif",fontSize:"clamp(13px,1.5vw,17px)",fontWeight:900,letterSpacing:"clamp(2px,1vw,6px)",color:`${TH.text}`,lineHeight:1.1}}>{settings.store_name||"JAMEEL FABRICS"}</div>
+        <div style={{fontSize:7,letterSpacing:"clamp(2px,.8vw,5px)",color:`${TH.accent}`,fontFamily:"'Cormorant Garamond',serif",fontStyle:"italic",lineHeight:1,fontWeight:500}}>KUNJAH · PUNJAB</div>
       </button>
       <div className="search-bar hide-mob" style={{display:"flex",alignItems:"center",gap:8,background:"#f0ede8",border:"1px solid #e0dbd3",padding:"7px 14px",flex:1,maxWidth:200}}>
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9a8f83" strokeWidth="1.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
@@ -1961,7 +1953,7 @@ function Store({user,onLogout,onAccount,onAdmin,siteTheme,themeName}){
     <div style={{background:"#fff",borderTop:"1px solid #e8e4df",borderBottom:"1px solid #e8e4df",position:"sticky",top:64,zIndex:99,overflowX:"auto"}}>
       <div style={{display:"flex",justifyContent:"center",minWidth:"max-content",margin:"0 auto"}}>
         {CATS.map(([c,lbl])=>(
-          <button key={c} onClick={()=>{setCat(c);document.getElementById("prods")?.scrollIntoView({behavior:"smooth"});}} style={{padding:"14px clamp(14px,2.5vw,28px)",border:"none",background:"none",cursor:"pointer",fontFamily:"inherit",fontSize:10,fontWeight:600,letterSpacing:2,textTransform:"uppercase",color:cat===c?"#111":"#9a8f83",borderBottom:cat===c?"2px solid #111":"2px solid transparent",transition:"all .25s",whiteSpace:"nowrap",flexShrink:0}}>
+          <button key={c} onClick={()=>{setCat(c);document.getElementById("prods")?.scrollIntoView({behavior:"smooth"});}} style={{padding:"14px clamp(14px,2.5vw,28px)",border:"none",background:"none",cursor:"pointer",fontFamily:"inherit",fontSize:10,fontWeight:600,letterSpacing:2,textTransform:"uppercase",color:cat===c?TH.text:TH.muted,borderBottom:cat===c?`2px solid ${TH.text}`:"2px solid transparent",transition:"all .25s",whiteSpace:"nowrap",flexShrink:0}}>
             {lbl}
           </button>
         ))}
@@ -1983,7 +1975,7 @@ function Store({user,onLogout,onAccount,onAdmin,siteTheme,themeName}){
       </section>
     )}
     {/* PRODUCTS */}
-    <section id="prods" style={{background:`${TH.bg}`,borderBottom:`1px solid ${TH.border}`}}>
+    <section id="prods" className="jf-prods-section" style={{background:`${TH.bg}`,borderBottom:`1px solid ${TH.border}`}}>
       <div style={{textAlign:"center",padding:"clamp(48px,6vw,68px) clamp(16px,4vw,60px) 28px"}}>
         <div className="rv" style={{fontSize:9,letterSpacing:4,color:"#c9a84c",textTransform:"uppercase",fontWeight:700,marginBottom:10}}>Our Collection</div>
         <div className="rv" style={{fontFamily:"'Playfair Display',serif",fontSize:"clamp(22px,3vw,36px)",fontWeight:700,color:"#111",marginBottom:8}}>{cat==="All"?"All Collections":CAT_L[cat]||cat}</div>
@@ -2093,12 +2085,12 @@ function Store({user,onLogout,onAccount,onAdmin,siteTheme,themeName}){
         <div>
           <div style={{fontSize:10,letterSpacing:4,color:"#c9a84c",textTransform:"uppercase",marginBottom:10}}>Est. 1975</div>
           <h2 style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"clamp(26px,3.5vw,40px)",fontWeight:600,color:"#1a1612",lineHeight:1.2,margin:"0 0 16px"}}>Jameel Fabrics<br/><em style={{fontWeight:300}}>Kunjah</em></h2>
-          <p style={{fontSize:14,color:"#6b5f52",lineHeight:1.8,margin:"0 0 20px"}}>{settings?.about||"For nearly four decades, Jameel Fabrics has been Kunjah's most trusted name in premium Pakistani clothing. From elegant unstitched suits to fine embroidered fabric — every piece reflects our commitment to quality."}</p>
+          <p style={{fontSize:"clamp(13px,1.5vw,15px)",color:"#6b5f52",lineHeight:1.8,maxWidth:480,marginBottom:28}}>{settings?.story_text||"From elegant unstitched suits to fine embroidered fabric — every piece reflects our commitment to quality."}</p>
           <div style={{display:"flex",gap:24,flexWrap:"wrap"}}>
             {[
-              [settings?.story_stat1||"50+","Years"],
-              [settings?.story_stat2||"10K+","Happy Customers"],
-              [settings?.story_stat3||"500+","Products"],
+              [settings?.story_stat1||"50+",settings?.story_label1||"Years of Trust"],
+              [settings?.story_stat2||"10K+",settings?.story_label2||"Happy Customers"],
+              [settings?.story_stat3||"500+",settings?.story_label3||"Products"],
             ].map(([n,d],i)=>(
               <div key={i} style={{textAlign:"center"}}>
                 <div style={{fontSize:22,fontWeight:700,color:"#c9a84c",fontFamily:"'Cormorant Garamond',serif"}}>{n}</div>
@@ -2118,7 +2110,36 @@ function Store({user,onLogout,onAccount,onAdmin,siteTheme,themeName}){
         </div>
       </div>
     </section>
-    {/* FOOTER */}
+    
+    {/* FEATURES SECTION */}
+    <section style={{background:`${TH.dark}`,padding:"clamp(48px,6vw,72px) clamp(16px,4vw,60px)"}}>
+      <div style={{textAlign:"center",marginBottom:40}}>
+        <div style={{fontSize:9,letterSpacing:4,color:TH.accent,textTransform:"uppercase",marginBottom:8,opacity:.7}}>Why Choose Us</div>
+        <h2 style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"clamp(24px,3.5vw,40px)",fontWeight:600,color:TH.darkText,lineHeight:1.2}}>
+          {settings?.features_title||"Our Commitment to Excellence"}
+        </h2>
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:16,maxWidth:1100,margin:"0 auto"}}>
+        {[
+          [settings?.feat1_title||"Premium Brands",settings?.feat1_desc||"Gul Ahmed, Alkaram, Sapphire & all top Pakistani brands — 100% genuine.","🧵"],
+          [settings?.feat2_title||"50+ Years Experience",settings?.feat2_desc||"Serving families since 1975. Generations of trust and quality.","⭐"],
+          [settings?.feat3_title||"All Categories",settings?.feat3_desc||"Women, Men, Kids, Abayas, Bedsheets, Blankets & more under one roof.","👗"],
+          [settings?.feat4_title||"Nationwide Delivery",settings?.feat4_desc||"Fast & secure delivery to every corner of Pakistan.","🚚"],
+          [settings?.feat5_title||"Easy Online Shopping",settings?.feat5_desc||"Browse, select, order — delivered to your door with ease.","📱"],
+          [settings?.feat6_title||"WhatsApp Support",settings?.feat6_desc||"Instant support via WhatsApp. We're always here for you.","💬"],
+        ].map(([title,desc,icon],i)=>(
+          <div key={i} style={{background:"rgba(255,255,255,.04)",border:`1px solid ${TH.accent}1a`,borderRadius:8,padding:"clamp(20px,3vw,28px)",transition:"all .25s",cursor:"default"}}
+            onMouseEnter={e=>{e.currentTarget.style.background=`rgba(255,255,255,.07)`;e.currentTarget.style.borderColor=`${TH.accent}44`;}}
+            onMouseLeave={e=>{e.currentTarget.style.background="rgba(255,255,255,.04)";e.currentTarget.style.borderColor=`${TH.accent}1a`;}}>
+            <div style={{fontSize:28,marginBottom:14}}>{icon}</div>
+            <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"clamp(16px,2vw,20px)",fontWeight:600,color:TH.darkText,marginBottom:8,lineHeight:1.2}}>{title}</div>
+            <div style={{fontSize:12,color:`${TH.darkText}88`,lineHeight:1.7}}>{desc}</div>
+          </div>
+        ))}
+      </div>
+    </section>
+
+{/* FOOTER */}
     <footer style={{background:"#0a0907",color:"#e0dbd3",padding:"clamp(52px,6vw,80px) clamp(16px,4vw,60px) 28px"}}>
       <div className="footer-grid" style={{display:"grid",gridTemplateColumns:"1.8fr 1fr 1fr 1fr",gap:"clamp(24px,3.5vw,52px)",marginBottom:52,maxWidth:1200,margin:"0 auto 52px"}}>
         <div>
@@ -3032,6 +3053,8 @@ function AContent({settings}){
     {t:"🏷️ Brand Ticker",fields:[["ticker_brands","Brands (· se alag karo)",true]]},
     {t:"📊 Stats",fields:[["sold_count","Sold Count Text"]]},
     {t:"🗺️ Countdown Timer",fields:[["sale_title","Sale Title"],["sale_text","Sale Subtitle"],["sale_end_date","End Date",false,true]]},
+    {t:"📖 Our Story",fields:[["story_text","Story Text",true],["story_stat1","Stat 1 Number"],["story_label1","Stat 1 Label"],["story_stat2","Stat 2 Number"],["story_label2","Stat 2 Label"],["story_stat3","Stat 3 Number"],["story_label3","Stat 3 Label"]]},
+    {t:"✨ Features Section",fields:[["features_title","Section Title"],["feat1_title","Feature 1 Title"],["feat1_desc","Feature 1 Description"],["feat2_title","Feature 2 Title"],["feat2_desc","Feature 2 Description"],["feat3_title","Feature 3 Title"],["feat3_desc","Feature 3 Description"],["feat4_title","Feature 4 Title"],["feat4_desc","Feature 4 Description"],["feat5_title","Feature 5 Title"],["feat5_desc","Feature 5 Description"],["feat6_title","Feature 6 Title"],["feat6_desc","Feature 6 Description"]]},
   ];
 
   const AI2=({k,placeholder,rows=1})=>rows>1
