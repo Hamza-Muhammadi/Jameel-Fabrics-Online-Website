@@ -100,6 +100,43 @@ function toast(msg,type="info"){
   _toastListeners.forEach(fn=>fn(msg,type));
 }
 
+// ── useSettings: load all website_settings from Supabase ─────
+function useSettings(){
+  const[settings,setSettings]=useState({});
+  useEffect(()=>{
+    if(!sb)return;
+    sb.from("website_settings").select("key,value")
+      .then(({data})=>{
+        if(!data)return;
+        const obj={};
+        data.forEach(({key,value})=>{obj[key]=value;});
+        setSettings(obj);
+      });
+  },[]);
+  return settings;
+}
+
+// ── useDB: generic Supabase query hook ───────────────────────
+function useDB(queryFn,deps=[]){
+  const[data,setData]=useState(null);
+  const[loading,setLoading]=useState(true);
+  const[error,setError]=useState(null);
+  useEffect(()=>{
+    if(!sb){setLoading(false);return;}
+    setLoading(true);
+    queryFn()
+      .then(({data:d,error:e})=>{
+        if(e){setError(e);console.error("useDB error:",e);}
+        else setData(d);
+        setLoading(false);
+      })
+      .catch(e=>{setError(e);setLoading(false);});
+  // eslint-disable-next-line
+  },deps);
+  return{data,loading,error};
+}
+
+
 
 const CAT_L={WU:"Women Unstitched",WS:"Women Stitched",M:"Men's Unstitched",K:"Kids Unstitch",HOT:"Hot Sale",NEW:"New Arrivals","2PC":"2-Piece Sets"};
 const CATS=[
