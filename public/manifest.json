@@ -1,7 +1,7 @@
 {
-  "short_name": "JF Shop",
-  "name": "Jameel Fabrics Kunjah",
-  "description": "Premium Pakistani Clothing — Exclusive Designs",
+  "short_name": "Jameel ERP",
+  "name": "Jameel Fabrics ERP",
+  "description": "Jameel Fabrics Kunjah — Smart ERP System",
   "icons": [
     {
       "src": "favicon.ico",
@@ -23,9 +23,24 @@
   ],
   "start_url": ".",
   "display": "standalone",
-  "theme_color": "#111111",
-  "background_color": "#faf9f7",
-  "orientation": "portrait",
-  "categories": ["shopping", "lifestyle"],
-  "lang": "ur"
+  "orientation": "portrait-primary",
+  "theme_color": "#c9a84c",
+  "background_color": "#0a0a0a",
+  "categories": ["business", "productivity"],
+  "shortcuts": [
+    {
+      "name": "POS — Billing",
+      "short_name": "POS",
+      "description": "Seedha billing karo",
+      "url": "/#pos",
+      "icons": [{"src": "logo192.png", "sizes": "192x192"}]
+    },
+    {
+      "name": "Inventory",
+      "short_name": "Stock",
+      "description": "Products dekho",
+      "url": "/#inventory",
+      "icons": [{"src": "logo192.png", "sizes": "192x192"}]
+    }
+  ]
 }
