@@ -137,6 +137,13 @@ const SORT_OPTS=[{v:"new",l:"Newest First"},{v:"price_asc",l:"Price: Low to High
 
 
 const G=`
+:root{
+  --jf-bg:#faf9f7;--jf-card:#fff;--jf-surface:#f5f0e8;
+  --jf-text:#1a1612;--jf-muted:#9a8f83;--jf-border:#e8dfc0;
+  --jf-accent:#c9a84c;--jf-dark:#1a1612;--jf-dark-text:#f5efe0;
+}
+body{background:var(--jf-bg)!important;}
+
 @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Playfair+Display:ital,wght@0,700;0,900;1,400&family=Jost:wght@300;400;500;600;700&display=swap');
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth}
@@ -1614,6 +1621,13 @@ function Store({user,onLogout,onAccount,onAdmin,siteTheme,themeName}){
   const[wish,setWish]=useState(new Set());
   const[cartOpen,setCartOpen]=useState(false);
   const[menuOpen,setMenuOpen]=useState(false);
+  const[expandedCat,setExpandedCat]=useState(null);
+  const[brandsData,setBrandsData]=useState({});
+  useEffect(()=>{
+    if(!sb)return;
+    sb.from("website_settings").select("value").eq("key","brands_by_cat").single()
+      .then(({data})=>{if(data?.value)try{setBrandsData(JSON.parse(data.value));}catch{}});
+  },[]);
   const[authModal,setAuthModal]=useState(null);
   const[search,setSearch]=useState("");
   const[heroIdx,setHeroIdx]=useState(0);
@@ -1780,41 +1794,97 @@ function Store({user,onLogout,onAccount,onAdmin,siteTheme,themeName}){
           <button onClick={()=>setMenuOpen(false)} style={{background:"none",border:"none",cursor:"pointer",fontSize:22,color:"#7a6e65"}}>x</button>
         </div>
         <div style={{flex:1,overflowY:"auto",overscrollBehavior:"contain"}}>
-          {[
-            {sep:true,label:"Navigate"},
-            {ic:"🏠",lbl:"Home",fn:()=>{setCat("All");setMenuOpen(false);window.scrollTo({top:0,behavior:"smooth"});}},
-            {sep:true,label:"Categories"},
-            {ic:"👗",lbl:"Women Unstitch",fn:()=>{setCat("WU");setMenuOpen(false);document.getElementById("prods")?.scrollIntoView({behavior:"smooth"});}},
-            {ic:"✂️",lbl:"Women Stitch",fn:()=>{setCat("WS");setMenuOpen(false);document.getElementById("prods")?.scrollIntoView({behavior:"smooth"});}},
-            {ic:"💎",lbl:"Reshmi Suiting",fn:()=>{setCat("RS");setMenuOpen(false);document.getElementById("prods")?.scrollIntoView({behavior:"smooth"});}},
-            {ic:"🕌",lbl:"Abayas",fn:()=>{setCat("AB");setMenuOpen(false);document.getElementById("prods")?.scrollIntoView({behavior:"smooth"});}},
-            {ic:"👔",lbl:"Mens Plain",fn:()=>{setCat("MP");setMenuOpen(false);document.getElementById("prods")?.scrollIntoView({behavior:"smooth"});}},
-            {ic:"🪡",lbl:"Mens Embroidery",fn:()=>{setCat("ME");setMenuOpen(false);document.getElementById("prods")?.scrollIntoView({behavior:"smooth"});}},
-            {ic:"🧒",lbl:"Kids Unstitch",fn:()=>{setCat("KU");setMenuOpen(false);document.getElementById("prods")?.scrollIntoView({behavior:"smooth"});}},
-            {ic:"🛏️",lbl:"Bedsheets",fn:()=>{setCat("BS");setMenuOpen(false);document.getElementById("prods")?.scrollIntoView({behavior:"smooth"});}},
-            {ic:"🧣",lbl:"Blankets",fn:()=>{setCat("BL");setMenuOpen(false);document.getElementById("prods")?.scrollIntoView({behavior:"smooth"});}},
-            {ic:"📦",lbl:"Others",fn:()=>{setCat("OT");setMenuOpen(false);document.getElementById("prods")?.scrollIntoView({behavior:"smooth"});}},
-            {sep:true,label:"Account"},
-            ...(user?[
-              {ic:"👤",lbl:"My Account",fn:()=>{onAccount();setMenuOpen(false);}},
-              {ic:"🚪",lbl:"Logout",fn:()=>{onLogout();setMenuOpen(false);},muted:true},
-            ]:[
-              {ic:"👤",lbl:"Login / Register",fn:()=>{setAuthModal("login");setMenuOpen(false);}},
-            ]),
-            {sep:true,label:"Info"},
-            {ic:"📍",lbl:"Visit Our Store",fn:()=>{setMenuOpen(false);document.getElementById("store-map")?.scrollIntoView({behavior:"smooth"});}},
-            {ic:"📋",lbl:"Our Policies",fn:()=>{setMenuOpen(false);document.getElementById("policies")?.scrollIntoView({behavior:"smooth"});}},
-            {ic:"💬",lbl:"WhatsApp Us",fn:()=>{window.open("https://wa.me/"+wa,"_blank");setMenuOpen(false);}}
-          ].map((item,i)=>item.sep?(
-            <div key={i} style={{padding:"12px 24px 4px",fontSize:8,letterSpacing:3,textTransform:"uppercase",color:"#8a7f76",fontWeight:700}}>{item.label}</div>
-          ):(
-            <button key={i} onClick={item.fn} style={{display:"flex",alignItems:"center",gap:14,padding:"11px 24px",cursor:"pointer",border:"none",background:"none",width:"100%",textAlign:"left",fontFamily:"inherit",fontSize:item.small?11:13,fontWeight:500,color:item.muted?"#9a8f83":"#111",transition:"background .15s"}} onMouseEnter={e=>e.currentTarget.style.background="#f0ede8"} onMouseLeave={e=>e.currentTarget.style.background="none"}>
-              <span style={{opacity:.7,fontSize:16,width:22,textAlign:"center"}}>{item.ic}</span>{item.lbl}
+          <>
+            {/* Navigate */}
+            <div style={{fontSize:9,fontWeight:700,letterSpacing:2,textTransform:"uppercase",color:"#9a8f83",padding:"12px 16px 4px"}}>Navigate</div>
+            <button onClick={()=>{setCat("All");setMenuOpen(false);window.scrollTo({top:0,behavior:"smooth"});}} style={{display:"flex",alignItems:"center",gap:12,width:"100%",padding:"11px 16px",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",textAlign:"left",borderRadius:6,transition:"background .15s"}}
+              onMouseEnter={e=>e.currentTarget.style.background="#f5f0e8"} onMouseLeave={e=>e.currentTarget.style.background="none"}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#c9a84c" strokeWidth="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>
+              <span style={{fontSize:13,color:"#1a1612",fontWeight:500}}>Home</span>
             </button>
-          ))}
+
+            {/* Categories */}
+            <div style={{fontSize:9,fontWeight:700,letterSpacing:2,textTransform:"uppercase",color:"#9a8f83",padding:"12px 16px 4px",marginTop:4}}>Categories</div>
+            {[
+              {code:"WU",label:"Women Unstitch",icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M20.38 3.46L16 2a4 4 0 01-8 0L3.62 3.46a2 2 0 00-1.34 2.23l.58 3.57a1 1 0 00.99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 002-2V10h2.15a1 1 0 00.99-.84l.58-3.57a2 2 0 00-1.34-2.23z"/></svg>},
+              {code:"WS",label:"Women Stitch",icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>},
+              {code:"RS",label:"Reshmi Suiting",icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>},
+              {code:"AB",label:"Abayas",icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="12" cy="5" r="2"/><path d="M12 7c-2 0-6 1-6 5v3h12v-3c0-4-4-5-6-5z"/><path d="M6 15v4h12v-4"/></svg>},
+              {code:"MP",label:"Mens Plain",icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M20.38 3.46L16 2a4 4 0 01-8 0L3.62 3.46a2 2 0 00-1.34 2.23l.58 3.57a1 1 0 00.99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 002-2V10h2.15a1 1 0 00.99-.84l.58-3.57a2 2 0 00-1.34-2.23z"/></svg>},
+              {code:"ME",label:"Mens Embroidery",icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M12 3c-1 0-3 1-3 3s2 3 3 3 3-1 3-3-2-3-3-3z"/><path d="M3 21v-2a4 4 0 014-4h10a4 4 0 014 4v2"/></svg>},
+              {code:"KU",label:"Kids Unstitch",icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="12" cy="8" r="4"/><path d="M8 14l-2 7h12l-2-7"/></svg>},
+              {code:"BS",label:"Bedsheets",icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/><line x1="12" y1="12" x2="12" y2="17"/><line x1="9.5" y1="14.5" x2="14.5" y2="14.5"/></svg>},
+              {code:"BL",label:"Blankets",icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3 6h18M3 12h18M3 18h18"/></svg>},
+              {code:"OT",label:"Others",icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>},
+            ].map(({code,label,icon})=>{
+              const catBrands=brandsData[code]||[];
+              const isExpanded=expandedCat===code;
+              return(
+                <div key={code}>
+                  <button
+                    onClick={()=>{
+                      if(catBrands.length>0){
+                        setExpandedCat(isExpanded?null:code);
+                      }else{
+                        setCat(code);setMenuOpen(false);
+                        document.getElementById("prods")?.scrollIntoView({behavior:"smooth"});
+                      }
+                    }}
+                    style={{display:"flex",alignItems:"center",gap:12,width:"100%",padding:"10px 16px",background:cat===code?"#f5f0e8":"none",border:"none",cursor:"pointer",fontFamily:"inherit",textAlign:"left",borderRadius:6,transition:"background .15s"}}
+                    onMouseEnter={e=>e.currentTarget.style.background="#f5f0e8"} onMouseLeave={e=>{e.currentTarget.style.background=cat===code?"#f5f0e8":"none";}}>
+                    <span style={{color:"#c9a84c",flexShrink:0}}>{icon}</span>
+                    <span style={{fontSize:13,color:"#1a1612",fontWeight:cat===code?600:400,flex:1}}>{label}</span>
+                    {catBrands.length>0&&<svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="#9a8f83" strokeWidth="1.5" style={{transition:"transform .2s",transform:isExpanded?"rotate(180deg)":"rotate(0deg)"}}><path d="M2 4l4 4 4-4"/></svg>}
+                  </button>
+                  {isExpanded&&catBrands.length>0&&(
+                    <div style={{paddingLeft:44,paddingBottom:4}}>
+                      <button onClick={()=>{setCat(code);setBrandFilter("All");setMenuOpen(false);document.getElementById("prods")?.scrollIntoView({behavior:"smooth"});}} style={{display:"block",width:"100%",padding:"7px 12px",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",textAlign:"left",fontSize:12,color:"#6b5f52",borderRadius:4}} onMouseEnter={e=>e.currentTarget.style.background="#f5f0e8"} onMouseLeave={e=>e.currentTarget.style.background="none"}>
+                        All Brands
+                      </button>
+                      {catBrands.map(b=>(
+                        <button key={b} onClick={()=>{setCat(code);setBrandFilter(b);setMenuOpen(false);document.getElementById("prods")?.scrollIntoView({behavior:"smooth"});}} style={{display:"block",width:"100%",padding:"7px 12px",background:brandFilter===b&&cat===code?"#f0ede8":"none",border:"none",cursor:"pointer",fontFamily:"inherit",textAlign:"left",fontSize:12,color:"#6b5f52",borderRadius:4,fontWeight:brandFilter===b&&cat===code?600:400}} onMouseEnter={e=>e.currentTarget.style.background="#f5f0e8"} onMouseLeave={e=>e.currentTarget.style.background=brandFilter===b&&cat===code?"#f0ede8":"none"}>
+                          · {b}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+
+            {/* Account */}
+            <div style={{fontSize:9,fontWeight:700,letterSpacing:2,textTransform:"uppercase",color:"#9a8f83",padding:"12px 16px 4px",marginTop:4}}>Account</div>
+            {user?(<>
+              <button onClick={()=>{onAccount();setMenuOpen(false);}} style={{display:"flex",alignItems:"center",gap:12,width:"100%",padding:"10px 16px",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",borderRadius:6}} onMouseEnter={e=>e.currentTarget.style.background="#f5f0e8"} onMouseLeave={e=>e.currentTarget.style.background="none"}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#c9a84c" strokeWidth="1.5"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                <span style={{fontSize:13,color:"#1a1612"}}>My Account</span>
+              </button>
+              <button onClick={()=>{onLogout();setMenuOpen(false);}} style={{display:"flex",alignItems:"center",gap:12,width:"100%",padding:"10px 16px",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",borderRadius:6}} onMouseEnter={e=>e.currentTarget.style.background="#f5f0e8"} onMouseLeave={e=>e.currentTarget.style.background="none"}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9a8f83" strokeWidth="1.5"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16,17 21,12 16,7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                <span style={{fontSize:13,color:"#9a8f83"}}>Logout</span>
+              </button>
+            </>):(
+              <button onClick={()=>{setAuthModal("login");setMenuOpen(false);}} style={{display:"flex",alignItems:"center",gap:12,width:"100%",padding:"10px 16px",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",borderRadius:6}} onMouseEnter={e=>e.currentTarget.style.background="#f5f0e8"} onMouseLeave={e=>e.currentTarget.style.background="none"}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#c9a84c" strokeWidth="1.5"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"/><polyline points="10,17 15,12 10,7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+                <span style={{fontSize:13,color:"#1a1612"}}>Login / Register</span>
+              </button>
+            )}
+
+            {/* Info */}
+            <div style={{fontSize:9,fontWeight:700,letterSpacing:2,textTransform:"uppercase",color:"#9a8f83",padding:"12px 16px 4px",marginTop:4}}>Info</div>
+            {[
+              {label:"Visit Our Store",icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>,fn:()=>{setMenuOpen(false);document.getElementById("store-map")?.scrollIntoView({behavior:"smooth"});}},
+              {label:"Our Policies",icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>,fn:()=>{setMenuOpen(false);document.getElementById("policies")?.scrollIntoView({behavior:"smooth"});}},
+              {label:"WhatsApp Us",icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="#25d366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347zM12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.66 1.438 5.168L2 22l4.832-1.438A9.96 9.96 0 0012 22c5.523 0 10-4.477 10-10S17.523 2 12 2z"/></svg>,fn:()=>{const msg=settings?.wa_greeting||"Assalam! I am interested in your fabrics.";window.open("https://wa.me/"+wa+"?text="+encodeURIComponent(msg),"_blank");setMenuOpen(false);}},
+            ].map(({label,icon,fn})=>(
+              <button key={label} onClick={fn} style={{display:"flex",alignItems:"center",gap:12,width:"100%",padding:"10px 16px",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",borderRadius:6}} onMouseEnter={e=>e.currentTarget.style.background="#f5f0e8"} onMouseLeave={e=>e.currentTarget.style.background="none"}>
+                <span style={{color:"#c9a84c",flexShrink:0}}>{icon}</span>
+                <span style={{fontSize:13,color:"#1a1612"}}>{label}</span>
+              </button>
+            ))}
+          </>
         </div>
-      </div>
-    </>)}
+      </div>    </>)}
     {/* EID COUNTDOWN */}
     <EidCountdown settings={settings}/>
     
@@ -1913,7 +1983,7 @@ function Store({user,onLogout,onAccount,onAdmin,siteTheme,themeName}){
       </section>
     )}
     {/* PRODUCTS */}
-    <section id="prods" style={{background:"#faf9f7",borderBottom:"1px solid #e8e4df"}}>
+    <section id="prods" style={{background:`${TH.bg}`,borderBottom:`1px solid ${TH.border}`}}>
       <div style={{textAlign:"center",padding:"clamp(48px,6vw,68px) clamp(16px,4vw,60px) 28px"}}>
         <div className="rv" style={{fontSize:9,letterSpacing:4,color:"#c9a84c",textTransform:"uppercase",fontWeight:700,marginBottom:10}}>Our Collection</div>
         <div className="rv" style={{fontFamily:"'Playfair Display',serif",fontSize:"clamp(22px,3vw,36px)",fontWeight:700,color:"#111",marginBottom:8}}>{cat==="All"?"All Collections":CAT_L[cat]||cat}</div>
@@ -2902,113 +2972,130 @@ function ACoupons({coupons,onRefresh}){
 }
 function AContent({settings}){
   const[f,setF]=useState({});
+  const[saving,setSaving]=useState(false);
+  const[saved,setSaved]=useState(false);
   const[vidUploading,setVidUploading]=useState(false);
-  const[vidProgress,setVidProgress]=useState(0);
-  useEffect(()=>setF({...settings}),[settings]);
+  const[debRef]=useState({});
+  useEffect(()=>{if(settings&&Object.keys(settings).length>0)setF({...settings});},[settings]);
+
+  // Auto-save individual field on change
+  function updateF(key,val){
+    setF(p=>({...p,[key]:val}));
+    clearTimeout(debRef[key]);
+    debRef[key]=setTimeout(async()=>{
+      if(!sb)return;
+      await sb.from("website_settings").upsert({key,value:String(val||"")},{onConflict:"key"});
+    },1000);
+  }
+
+  async function saveAll(){
+    if(!sb)return;setSaving(true);
+    try{
+      await Promise.all(Object.entries(f).map(([k,v])=>
+        sb.from("website_settings").upsert({key:k,value:String(v||"")},{onConflict:"key"})
+      ));
+      setSaved(true);setTimeout(()=>setSaved(false),2500);
+    }catch(e){alert("Error: "+e.message);}
+    setSaving(false);
+  }
+
   async function uploadVideo(file){
-    if(!sb)return alert("Supabase not connected");
-    if(!file)return;
-    if(file.size>100*1024*1024)return alert("Max 100MB video");
-    setVidUploading(true);setVidProgress(0);
+    if(!sb||!file)return;
+    if(file.size>100*1024*1024)return alert("Max 100MB");
+    setVidUploading(true);
     const ext=file.name.split(".").pop();
     const path="videos/"+Date.now()+"."+ext;
     const{data,error}=await sb.storage.from("videos").upload(path,file,{contentType:file.type,upsert:true});
     if(error){alert("Upload failed: "+error.message);setVidUploading(false);return;}
     const{data:{publicUrl}}=sb.storage.from("videos").getPublicUrl(path);
-    setF(p=>({...p,video_url:publicUrl,video_show:"true"}));
-    await sb.from("website_settings").upsert({key:"video_url",value:publicUrl},{onConflict:"key"});
-    await sb.from("website_settings").upsert({key:"video_show",value:"true"},{onConflict:"key"});
-    setVidUploading(false);setVidProgress(100);
-    toast("Video uploaded! ✅","success");
+    updateF("video_url",publicUrl);updateF("video_show","true");
+    setVidUploading(false);
   }
-  const[saving,setSaving]=useState(false);
-  const[saved,setSaved]=useState(false);
-  const debRef=useRef(null);
-  function updateF(key,val){
-    const nf={...f,[key]:val};
-    setF(nf);
-    // Debounced auto-save after 1.5s
-    clearTimeout(debRef.current);
-    setSaved(false);
-    debRef.current=setTimeout(async()=>{
-      if(!sb)return;
-      setSaving(true);
-      await Promise.all(Object.entries(nf).map(([k,v])=>sb.from("website_settings").upsert({key:k,value:String(v)},{onConflict:"key"})));
-      setSaving(false);setSaved(true);
-      setTimeout(()=>setSaved(false),2000);
-    },1500);
+
+  async function uploadBanner(file){
+    if(!file)return;
+    const r=new FileReader();
+    r.onload=async ev=>{
+      const url=ev.target.result;
+      updateF("hero_banner_url",url);
+      updateF("hero_banner_show","true");
+    };
+    r.readAsDataURL(file);
   }
-  async function save(){
-    if(!sb){toast("Supabase not connected","error");return;}
-    setSaving(true);
-    try{
-      await Promise.all(Object.entries(f).map(([k,v])=>
-        sb.from("website_settings").upsert({key:k,value:String(v||"")},{onConflict:"key"})
-      ));
-      setSaving(false);setSaved(true);setTimeout(()=>setSaved(false),2500);
-      toast("Saved! ✅","success");
-    }catch(e){setSaving(false);toast("Error: "+e.message,"error");}
-  }
+
+  // Sections config
+  const sections=[
+    {t:"🏪 Store Info",fields:[["store_name","Store Name"],["addr1","Address Line 1"],["addr2","Address Line 2"],["hours","Working Hours"],["phone","Phone Number"]]},
+    {t:"🔗 Social Links",fields:[["wa_number","WhatsApp Number"],["insta","Instagram URL"],["fb","Facebook URL"],["tiktok","TikTok URL"]]},
+    {t:"📢 Announcement Bar",fields:[["announcement","Messages (pipe | se alag karo)",true]]},
+    {t:"🏠 Hero Section",fields:[["hlabel","Hero Label"],["hsub","Tagline"],["about","About Text",true]]},
+    {t:"🏷️ Brand Ticker",fields:[["ticker_brands","Brands (· se alag karo)",true]]},
+    {t:"📊 Stats",fields:[["sold_count","Sold Count Text"]]},
+    {t:"🗺️ Countdown Timer",fields:[["sale_title","Sale Title"],["sale_text","Sale Subtitle"],["sale_end_date","End Date",false,true]]},
+  ];
+
+  const AI2=({k,placeholder,rows=1})=>rows>1
+    ?<textarea value={f[k]||""} onChange={e=>updateF(k,e.target.value)} rows={rows} placeholder={placeholder} style={{width:"100%",padding:"8px 10px",border:"1px solid #e5e7eb",borderRadius:6,fontSize:12,outline:"none",resize:"vertical",fontFamily:"inherit",boxSizing:"border-box"}}/>
+    :<AI value={f[k]||""} onChange={e=>updateF(k,e.target.value)} placeholder={placeholder}/>;
+
   return(<div>
-    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:22,flexWrap:"wrap",gap:12}}>
-      <AH title="Website Content" sub="Sab content yahan se change karo"/>
-      <ABtn onClick={save} style={{background:saved?"#16a34a":"#111",color:"#fff",transition:"background .3s"}}>{saving?"Saving...":saved?"✓ Saved":"Save All"}</ABtn>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20,flexWrap:"wrap",gap:12}}>
+      <AH title="📝 Website Content" sub="Changes auto-save"/>
+      <ABtn onClick={saveAll} style={{background:saving?"#6b7280":saved?"#16a34a":"#111",color:"#fff",minWidth:100,transition:"background .3s"}}>
+        {saving?"Saving...":saved?"✅ Saved":"💾 Save All"}
+      </ABtn>
     </div>
-    {[{t:"Announcement Bar",fields:[["announcement","Messages (pipe | separated)"]]},{t:"Hero Section",fields:[["hlabel","Hero Label"],["hsub","Tagline"],["about","About Text",true]]},{t:"Video Section",fields:[["video_label","Label"],["video_title","Title"]],isVideo:true},
-    {t:"Hero Banner",fields:[["hero_banner_caption","Banner Caption/Text"]],isHeroBanner:true},,
-    {t:"Countdown Timer",fields:[["countdown_title","Sale Title (e.g. Eid Special Sale)"],["countdown_subtext","Sub Text (e.g. Up to 30% Off)"],["countdown_end","End Date & Time",false,true]]},
-    {t:"Our Story Section",fields:[["about","Story Text (website pe dikhega)",true],["story_stat1","Stat 1 Number (e.g. 50+)"],["story_stat1_label","Stat 1 Label"],["story_stat2","Stat 2 Number"],["story_stat2_label","Stat 2 Label"],["story_stat3","Stat 3 Number"],["story_stat3_label","Stat 3 Label"]]},
-    {t:"Our Features (6 Boxes in Dark Section)",fields:[
-      ["feat1_title","Feature 1 Title"],["feat1_desc","Feature 1 Description"],
-      ["feat2_title","Feature 2 Title"],["feat2_desc","Feature 2 Description"],
-      ["feat3_title","Feature 3 Title"],["feat3_desc","Feature 3 Description"],
-      ["feat4_title","Feature 4 Title"],["feat4_desc","Feature 4 Description"],
-      ["feat5_title","Feature 5 Title"],["feat5_desc","Feature 5 Description"],
-      ["feat6_title","Feature 6 Title"],["feat6_desc","Feature 6 Description"],
-    ]},
-  ].map(sec=><ACard key={sec.t} style={{padding:20,marginBottom:16}}>
-      <div style={{fontSize:15,fontWeight:600,marginBottom:14,color:"#111"}}>{sec.t}</div>
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
-        {sec.fields.map(([k,lbl,full,isDate])=><div key={k} style={full?{gridColumn:"1/-1"}:{}}><ALbl c={lbl}/>{full?<textarea value={f[k]||""} onChange={e=>updateF(k,e.target.value)} style={{width:"100%",border:"1px solid #e5e7eb",borderRadius:6,padding:"8px 12px",fontSize:13,color:"#111",outline:"none",fontFamily:"inherit",minHeight:70,resize:"vertical"}}/>:isDate?<AI type="datetime-local" value={f[k]||""} onChange={e=>updateF(k,e.target.value)}/>:<AI value={f[k]||""} onChange={e=>updateF(k,e.target.value)}/>}</div>)}
-        {sec.t==="Hero Banner"&&<div style={{gridColumn:"1/-1"}}>
-                <div style={{marginBottom:8}}>
-                  <ALbl c="📸 Upload Banner Image (Mobile Gallery)"/>
-                  <input type="file" accept="image/*" onChange={e=>{const file=e.target.files[0];if(!file)return;const r=new FileReader();r.onload=async ev=>{const url=ev.target.result;updateF("hero_banner_url",url);if(sb)await sb.from("website_settings").upsert({key:"hero_banner_url",value:url},{onConflict:"key"});toast("Banner uploaded!","success");};r.readAsDataURL(file);}} style={{fontSize:12,width:"100%",marginBottom:8}}/>
-                  {f.hero_banner_url&&<img src={f.hero_banner_url} alt="" style={{width:"100%",maxHeight:120,objectFit:"cover",borderRadius:6,marginBottom:8}}/>}
-                </div>
-                <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",fontSize:13}}>
-                  <input type="checkbox" checked={f.hero_banner_show==="true"} onChange={e=>updateF("hero_banner_show",e.target.checked?"true":"false")} style={{accentColor:"#c9a84c",width:16,height:16}}/>
-                  Show on website
-                </label>
-              </div>}
-              {sec.t.includes("Video")&&<div style={{gridColumn:"1/-1"}}>
-          {/* Video upload from mobile gallery */}
-          <div style={{background:"#f4f5f7",borderRadius:8,padding:14,marginBottom:10}}>
-            <div style={{fontWeight:600,fontSize:13,color:"#111",marginBottom:8}}>📱 Upload Video (Mobile Gallery)</div>
-            <input type="file" accept="video/*" capture="environment" onChange={e=>uploadVideo(e.target.files[0])} style={{fontSize:12,marginBottom:8,display:"block"}}/>
-            {vidUploading&&<div style={{marginTop:6}}>
-              <div style={{background:"#e5e7eb",borderRadius:4,height:6,overflow:"hidden"}}>
-                <div style={{background:"#c9a84c",height:"100%",width:"60%",animation:"shimmer 1.5s infinite"}}/>
-              </div>
-              <div style={{fontSize:11,color:"#9ca3af",marginTop:4}}>Uploading to Supabase Storage...</div>
-            </div>}
-            {f.video_url&&!vidUploading&&<div style={{marginTop:8}}>
-              <div style={{fontSize:11,color:"#16a34a",marginBottom:4}}>✅ Video uploaded</div>
-              <video src={f.video_url} controls style={{width:"100%",maxHeight:160,borderRadius:6,background:"#000"}}/>
-            </div>}
-            <div style={{fontSize:11,color:"#9ca3af",marginTop:6}}>Or paste YouTube/MP4 URL below:</div>
-            <AI value={f.video_url||""} onChange={e=>updateF("video_url",e.target.value)} placeholder="https://youtube.com/... or https://...mp4"/>
-          </div>
-          <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",fontSize:13,color:"#111"}}>
-            <input type="checkbox" checked={f.video_show==="true"||f.video_show===true} onChange={e=>updateF("video_show",String(e.target.checked))} style={{accentColor:"#111"}}/>
-            Show video section on website
-          </label>
-        </div>}
-        {sec.t.includes("Countdown")&&<div style={{gridColumn:"1/-1"}}><label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",fontSize:13,color:"#111"}}><input type="checkbox" checked={f.countdown_active==="true"||f.countdown_active===true} onChange={e=>updateF("countdown_active",String(e.target.checked))} style={{accentColor:"#b91c1c"}}/>Show countdown banner on website</label></div>}
-      </div>
-    </ACard>)}
+
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
+      {sections.map(sec=>(
+        <ACard key={sec.t} style={{padding:16,marginBottom:0}}>
+          <div style={{fontSize:13,fontWeight:700,marginBottom:12,color:"#111"}}>{sec.t}</div>
+          {sec.fields.map(([k,l,isTextarea,isDate])=>(
+            <div key={k} style={{marginBottom:10}}>
+              <ALbl c={l}/>
+              {isDate
+                ?<AI type="date" value={f[k]||""} onChange={e=>updateF(k,e.target.value)}/>
+                :isTextarea
+                  ?<textarea value={f[k]||""} onChange={e=>updateF(k,e.target.value)} rows={3} style={{width:"100%",padding:"8px 10px",border:"1px solid #e5e7eb",borderRadius:6,fontSize:12,outline:"none",resize:"vertical",fontFamily:"inherit",boxSizing:"border-box"}}/>
+                  :<AI value={f[k]||""} onChange={e=>updateF(k,e.target.value)}/>
+              }
+            </div>
+          ))}
+        </ACard>
+      ))}
+
+      {/* Hero Banner Upload */}
+      <ACard style={{padding:16}}>
+        <div style={{fontSize:13,fontWeight:700,marginBottom:12,color:"#111"}}>📸 Hero Banner / Post</div>
+        <input type="file" accept="image/*" onChange={e=>uploadBanner(e.target.files[0])} style={{fontSize:11,marginBottom:8,display:"block",width:"100%"}}/>
+        {f.hero_banner_url&&<img src={f.hero_banner_url} alt="" style={{width:"100%",maxHeight:100,objectFit:"cover",borderRadius:4,marginBottom:8}}/>}
+        <ALbl c="Caption"/>
+        <AI value={f.hero_banner_caption||""} onChange={e=>updateF("hero_banner_caption",e.target.value)} placeholder="e.g. Eid Sale — 30% Off"/>
+        <label style={{display:"flex",alignItems:"center",gap:8,marginTop:8,cursor:"pointer",fontSize:12}}>
+          <input type="checkbox" checked={f.hero_banner_show==="true"} onChange={e=>updateF("hero_banner_show",e.target.checked?"true":"false")} style={{accentColor:"#c9a84c"}}/>
+          Website pr dikhao
+        </label>
+      </ACard>
+
+      {/* Video Upload */}
+      <ACard style={{padding:16}}>
+        <div style={{fontSize:13,fontWeight:700,marginBottom:12,color:"#111"}}>🎥 Video Section</div>
+        <ALbl c="Video Title"/><AI value={f.video_title||""} onChange={e=>updateF("video_title",e.target.value)} placeholder="e.g. Our Story"/>
+        <div style={{marginTop:8}}><ALbl c="Upload Video (Mobile)"/></div>
+        <input type="file" accept="video/*" capture="environment" onChange={e=>uploadVideo(e.target.files[0])} style={{fontSize:11,marginBottom:6,display:"block"}}/>
+        {vidUploading&&<div style={{fontSize:11,color:"#c9a84c"}}>⏳ Uploading...</div>}
+        {f.video_url&&!vidUploading&&<div style={{fontSize:11,color:"#16a34a",marginBottom:4}}>✅ Video ready</div>}
+        <div style={{marginTop:4}}><ALbl c="Ya URL paste karo"/><AI value={f.video_url||""} onChange={e=>updateF("video_url",e.target.value)} placeholder="https://..."/></div>
+        <label style={{display:"flex",alignItems:"center",gap:8,marginTop:8,cursor:"pointer",fontSize:12}}>
+          <input type="checkbox" checked={f.video_show==="true"} onChange={e=>updateF("video_show",e.target.checked?"true":"false")} style={{accentColor:"#c9a84c"}}/>
+          Video dikhao
+        </label>
+      </ACard>
+    </div>
   </div>);
 }
+
+
 function ASubs({subs}){
   const safeSubs=subs||[];
   const[tab,setTab]=useState("subscribers");
@@ -3112,102 +3199,76 @@ function ASubs({subs}){
 
 
 function ASettings({settings}){
-  const[f,setF]=useState({});const[np,setNp]=useState("");const[cp,setCp]=useState("");
-  useEffect(()=>setF({...settings}),[settings]);
+  const[f,setF]=useState({});
+  const[np,setNp]=useState("");const[cp,sCp]=useState("");
   const[saving,setSaving]=useState(false);
   const[saved,setSaved]=useState(false);
-  async function save(){if(!sb)return;setSaving(true);await Promise.all(Object.entries(f).map(([k,v])=>sb.from("website_settings").upsert({key:k,value:String(v)},{onConflict:"key"})));setSaving(false);setSaved(true);setTimeout(()=>setSaved(false),2000);toast("Saved!","success");}
-  async function chgPass(){if(!np||np.length<6){toast("Min 6 chars","error");return;}if(np!==cp){toast("Passwords don't match","error");return;}if(sb)await sb.from("website_settings").upsert({key:"admin_pass",value:np},{onConflict:"key"});toast("Password changed!","success");setNp("");setCp("");}
-  async function backup(){const{data:p}=sb?await sb.from("products").select("*"):{data:[]};const{data:s}=sb?await sb.from("website_settings").select("*"):{data:[]};const d=JSON.stringify({v:1,ts:new Date().toISOString(),products:p,settings:s},null,2);const a=document.createElement("a");a.href="data:application/json,"+encodeURIComponent(d);a.download="jf-backup-"+new Date().toISOString().slice(0,10)+".json";a.click();toast("Downloaded!","success");}
+  const[debRef]=useState({});
+  useEffect(()=>setF({...settings}),[settings]);
+
+  function updateF(key,val){
+    const nf={...f,[key]:val};setF(nf);
+    clearTimeout(debRef[key]);
+    debRef[key]=setTimeout(async()=>{
+      if(sb)await sb.from("website_settings").upsert({key,value:String(val||"")},{onConflict:"key"});
+    },800);
+  }
+
+  async function save(){
+    if(!sb)return;setSaving(true);
+    try{
+      await Promise.all(Object.entries(f).map(([k,v])=>
+        sb.from("website_settings").upsert({key:k,value:String(v||"")},{onConflict:"key"})
+      ));
+      setSaved(true);setTimeout(()=>setSaved(false),2500);
+    }catch(e){alert("Save error: "+e.message);}
+    setSaving(false);
+  }
+
+  async function changePwd(){
+    if(!sb||!np)return;
+    const{error}=await sb.auth.updateUser({password:np});
+    if(error)alert(error.message);else{alert("Password changed!");setNp("");sCp("");}
+  }
+
   return(<div>
-    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16,flexWrap:"wrap",gap:12}}>
-      <AH title="Settings"/>
-      <ABtn onClick={save} style={{background:saving?"#6b7280":saved?"#16a34a":"#111",color:"#fff",minWidth:80}}>
-        {saving?"Saving...":saved?"✓ Saved":"💾 Save All"}
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20,flexWrap:"wrap",gap:12}}>
+      <AH title="⚙️ General Settings"/>
+      <ABtn onClick={save} style={{background:saving?"#6b7280":saved?"#16a34a":"#111",color:"#fff",minWidth:90,transition:"background .3s"}}>
+        {saving?"Saving...":saved?"✅ Saved":"💾 Save All"}
       </ABtn>
     </div>
-
-    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:20,alignItems:"start"}}>
+    <div style={{fontSize:11,color:"#9ca3af",marginBottom:16,background:"#f0fdf4",border:"1px solid #bbf7d0",borderRadius:6,padding:"8px 12px"}}>
+      ℹ️ Theme, Shop, WA, Subscription, Delivery settings left sidebar mein hain alag alag pages ke saath.
+    </div>
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,alignItems:"start"}}>
       <div>
-        <ACard style={{padding:20,marginBottom:16}}>
-          <div style={{fontSize:15,fontWeight:600,marginBottom:14,color:"#111"}}>Store Info</div>
-          <div style={{display:"grid",gap:12}}>
-            {[["store_name","Store Name"],["wa_number","WhatsApp (923...)"],["phone","Phone"],["addr1","Address 1"],["addr2","Address 2"],["hours","Business Hours"]].map(([k,lbl])=><div key={k}><ALbl c={lbl}/><AI value={f[k]||""} onChange={e=>updateF(k,e.target.value)}/></div>)}
-          </div>
+        <ACard style={{padding:18,marginBottom:16}}>
+          <div style={{fontSize:14,fontWeight:700,marginBottom:12,color:"#111"}}>🔐 Change Password</div>
+          <div style={{marginBottom:8}}><ALbl c="New Password"/><input type="password" value={np} onChange={e=>setNp(e.target.value)} style={{width:"100%",padding:"8px 10px",border:"1px solid #e5e7eb",borderRadius:6,fontSize:13,outline:"none",boxSizing:"border-box"}}/></div>
+          <div style={{marginBottom:10}}><ALbl c="Confirm Password"/><input type="password" value={cp} onChange={e=>sCp(e.target.value)} style={{width:"100%",padding:"8px 10px",border:"1px solid #e5e7eb",borderRadius:6,fontSize:13,outline:"none",boxSizing:"border-box"}}/></div>
+          <ABtn onClick={changePwd} style={{background:"#111",color:"#fff",width:"100%"}}>Change Password</ABtn>
         </ACard>
-        <ACard style={{padding:20}}>
-          <div style={{fontSize:15,fontWeight:600,marginBottom:14,color:"#111"}}>Social Links</div>
-          <div style={{display:"grid",gap:12}}>
-            {[["insta","Instagram URL"],["tiktok","TikTok URL"],["fb","Facebook URL"]].map(([k,lbl])=><div key={k}><ALbl c={lbl}/><AI value={f[k]||""} onChange={e=>updateF(k,e.target.value)} placeholder="https://..."/></div>)}
-          </div>
+        <ACard style={{padding:18,marginBottom:16}}>
+          <div style={{fontSize:14,fontWeight:700,marginBottom:12,color:"#111"}}>📊 Supabase Status</div>
+          <div style={{fontSize:12,color:sb?"#16a34a":"#dc2626",fontWeight:600}}>{sb?"✅ Connected":"❌ Not Connected"}</div>
+          {sb&&<div style={{fontSize:11,color:"#9ca3af",marginTop:4}}>URL: {process.env.REACT_APP_SUPABASE_URL?.slice(0,30)}...</div>}
         </ACard>
       </div>
       <div>
-        <ACard style={{padding:20,marginBottom:16}}><div style={{fontSize:15,fontWeight:600,marginBottom:10,color:"#111"}}>Supabase Status</div><div style={{background:"#f9fafb",borderRadius:8,padding:12,fontSize:12,color:"#6b7280"}}>{SURL?"Connected":"Not connected - add env vars in Vercel"}</div></ACard>
-        <ACard style={{padding:20,marginBottom:16}}>
-          <div style={{fontSize:15,fontWeight:600,marginBottom:14,color:"#111"}}>Change Password</div>
-          <div style={{display:"grid",gap:12}}>
-            <div><ALbl c="New Password"/><AI type="password" value={np} onChange={e=>setNp(e.target.value)} placeholder="Min 6 characters"/></div>
-            <div><ALbl c="Confirm"/><AI type="password" value={cp} onChange={e=>setCp(e.target.value)}/></div>
-          </div>
-          <ABtn onClick={chgPass} style={{background:"#111",color:"#fff",marginTop:12}}>Change</ABtn>
+        <ACard style={{padding:18,marginBottom:16}}>
+          <div style={{fontSize:14,fontWeight:700,marginBottom:12,color:"#111"}}>💾 Backup</div>
+          <ABtn onClick={async()=>{if(!sb)return;const{data}=await sb.from("products").select("*");const a=document.createElement("a");a.href="data:application/json,"+encodeURIComponent(JSON.stringify(data,null,2));a.download="products_backup_"+Date.now()+".json";a.click();}} style={{background:"#111",color:"#fff",width:"100%",marginBottom:8}}>⬇️ Download Products Backup</ABtn>
+          <ABtn onClick={async()=>{if(!sb)return;const{data}=await sb.from("online_orders").select("*");const a=document.createElement("a");a.href="data:application/json,"+encodeURIComponent(JSON.stringify(data,null,2));a.download="orders_backup_"+Date.now()+".json";a.click();}} style={{background:"#374151",color:"#fff",width:"100%"}}>⬇️ Download Orders Backup</ABtn>
         </ACard>
-        <ACard style={{padding:20}}>
-          <div style={{fontSize:15,fontWeight:600,marginBottom:14,color:"#111"}}>Backup</div>
-          <ABtn onClick={backup} style={{background:"#fef3c7",color:"#92400e"}}>Download Backup</ABtn>
-        </ACard>
-
-      <div>
-        <ACard style={{padding:20,marginBottom:16}}>
-          <div style={{fontSize:15,fontWeight:600,marginBottom:14,color:"#111"}}>🚚 Free Shipping</div>
-          <div style={{display:"grid",gap:10}}>
-            <div><ALbl c="Minimum Amount (Rs.)"/><AI type="number" value={f.free_shipping_min||"2000"} onChange={e=>updateF("free_shipping_min",e.target.value)}/></div>
-            <div><ALbl c="Max Price Range (Rs.)"/><AI type="number" value={f.price_max||"15000"} onChange={e=>updateF("price_max",e.target.value)} placeholder="15000"/></div>
-            <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",fontSize:13}}><input type="checkbox" checked={f.free_shipping_active!=="false"} onChange={e=>updateF("free_shipping_active",e.target.checked?"true":"false")} style={{accentColor:"#c9a84c",width:16,height:16}}/> Enable Free Shipping Bar</label>
+        <ACard style={{padding:18}}>
+          <div style={{fontSize:14,fontWeight:700,marginBottom:12,color:"#111"}}>🔗 Quick Links</div>
+          <div style={{display:"flex",flexDirection:"column",gap:6}}>
+            {[["🎨 Theme","theme"],["🏪 Shop Settings","shop_settings"],["💬 WhatsApp","wa_settings"],["📦 Subscription","sub_settings"],["🚚 Delivery","delivery"],["🧾 Bill Templates","bill_templates"]].map(([l,id])=>(
+              <button key={id} onClick={()=>{const nav=document.querySelector(`[data-nav="${id}"]`);if(nav)nav.click();}} style={{textAlign:"left",padding:"8px 12px",background:"#f9fafb",border:"1px solid #e5e7eb",borderRadius:6,fontSize:12,cursor:"pointer",color:"#374151",transition:"all .15s"}}>{l} →</button>
+            ))}
           </div>
         </ACard>
-        <ACard style={{padding:20,marginBottom:16}}>
-          <div style={{fontSize:15,fontWeight:600,marginBottom:14,color:"#111"}}>💬 WhatsApp Message</div>
-          <ALbl c="Greeting Message (customers see this when they tap WA)"/>
-          <textarea value={f.wa_greeting||""} onChange={e=>updateF("wa_greeting",e.target.value)} rows={3} placeholder="Assalam! I'm interested in your fabrics..." style={{width:"100%",padding:"8px 10px",border:"1px solid #e5e7eb",borderRadius:6,fontSize:12,outline:"none",resize:"vertical",fontFamily:"inherit",boxSizing:"border-box"}}/>
-        </ACard>
-        <ACard style={{padding:20,marginBottom:16}}>
-          <div style={{fontSize:15,fontWeight:600,marginBottom:14,color:"#111"}}>🎂 Birthday Discount</div>
-          <div style={{display:"grid",gap:10}}>
-            <div><ALbl c="Discount % (default 10)"/><AI type="number" value={f.birthday_discount||"10"} onChange={e=>updateF("birthday_discount",e.target.value)}/></div>
-            <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",fontSize:13}}><input type="checkbox" checked={f.birthday_active!=="false"} onChange={e=>updateF("birthday_active",e.target.checked?"true":"false")} style={{accentColor:"#c9a84c",width:16,height:16}}/> Enable Birthday Discount</label>
-          </div>
-        </ACard>
-        <ACard style={{padding:20,marginBottom:16}}>
-          <div style={{fontSize:15,fontWeight:600,marginBottom:14,color:"#111"}}>🌙 Eid Countdown</div>
-          <div style={{display:"grid",gap:10}}>
-            <div><ALbl c="Eid Date"/><AI type="date" value={f.eid_date||""} onChange={e=>updateF("eid_date",e.target.value)}/></div>
-            <div><ALbl c="Title"/><AI value={f.eid_title||"Eid Collection"} onChange={e=>updateF("eid_title",e.target.value)}/></div>
-            <div><ALbl c="Subtitle"/><AI value={f.eid_subtitle||"Exclusive Arrivals Coming Soon"} onChange={e=>updateF("eid_subtitle",e.target.value)}/></div>
-            <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",fontSize:13}}><input type="checkbox" checked={f.eid_show==="true"} onChange={e=>updateF("eid_show",e.target.checked?"true":"false")} style={{accentColor:"#c9a84c",width:16,height:16}}/> Show Eid Countdown</label>
-          </div>
-        </ACard>
-        <ACard style={{padding:20}}>
-          <div style={{fontSize:15,fontWeight:600,marginBottom:14,color:"#111"}}>📦 Subscription Box</div>
-          <div style={{display:"grid",gap:10}}>
-            <div><ALbl c="Monthly Price (Rs.)"/><AI type="number" value={f.sub_price||"2500"} onChange={e=>updateF("sub_price",e.target.value)}/></div>
-            <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",fontSize:13}}><input type="checkbox" checked={f.sub_active!=="false"} onChange={e=>updateF("sub_active",e.target.checked?"true":"false")} style={{accentColor:"#c9a84c",width:16,height:16}}/> Show Subscription Box Section</label>
-          </div>
-        </ACard>
-      </div>
-
-/ACard>
-
-
-
-
-      {/* ── TICKER TEXT ── */}
-      <ACard style={{padding:20,marginBottom:16}}>
-        <div style={{fontSize:15,fontWeight:600,marginBottom:14,color:"#111"}}>🏷️ Brand Ticker Text</div>
-        <ALbl c="Brands (dot separated · )"/>
-        <textarea value={f.ticker_brands||""} onChange={e=>updateF("ticker_brands",e.target.value)} rows={2} placeholder="Gul Ahmed · Alkaram · Sana Safinaz · Khaadi · Bonanza · Sapphire · Nishat · Orient" style={{width:"100%",padding:"8px 10px",border:"1px solid #e5e7eb",borderRadius:6,fontSize:12,outline:"none",resize:"vertical",fontFamily:"inherit",boxSizing:"border-box"}}/>
-        <div style={{fontSize:11,color:"#9ca3af",marginTop:4}}>Shown on intro landing page ticker — use · (dot) to separate brand names</div>
-      </ACard>
       </div>
     </div>
   </div>);
