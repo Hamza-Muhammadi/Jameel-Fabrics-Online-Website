@@ -250,6 +250,12 @@ input[type=range].price-slider::-webkit-slider-thumb{-webkit-appearance:none;wid
 /* AI suggester */
 .ai-typing::after{content:"▌";animation:blink .7s infinite;}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+.jf-cursor{position:fixed;width:40px;height:40px;pointer-events:none;z-index:9999;transform:translate(-50%,-50%);transition:opacity .3s;}
+.jf-cursor-dot{position:fixed;width:6px;height:6px;background:#c9a84c;border-radius:50%;pointer-events:none;z-index:9999;transform:translate(-50%,-50%);box-shadow:0 0 0 2px rgba(201,168,76,.3);}
+.feel-badge{display:inline-block;font-size:10px;font-weight:600;letter-spacing:.5px;padding:2px 8px;border-radius:20px;border:1px solid #d8ce9a;background:#fffdf5;color:#7a6838;line-height:1.4;text-transform:capitalize;}
+.fs-bar{position:relative;width:100%;background:#f5f0e8;height:28px;overflow:hidden;font-size:11px;font-weight:600;color:#5a4a30;display:flex;align-items:center;padding:0 14px;}
+.fs-prog{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(90deg,#c9a84c,#e8c96a);transition:width .6s cubic-bezier(.4,0,.2,1);z-index:0;}
+@media(max-width:640px){.mystery-grid{grid-template-columns:1fr!important;border-radius:12px!important;}}
 body{background:var(--jf-bg)!important;color:var(--jf-text)!important}
 .rv{background:var(--jf-card)!important}
 footer{background:var(--jf-dark)!important;color:var(--jf-dark-text)!important}
@@ -845,7 +851,7 @@ function AuthModal({mode,onClose,onSuccess}){
   </div>);
 }
 
-function CartPanel({cart,setCart,wa,onClose,user,settings}){
+function CartPanel({cart,setCart,wa,onClose,user,settings,gift,setGift}){
   const[code,setCode]=useState("");const[coupon,setCoupon]=useState(null);const[cL,setCL]=useState(false);
   const[showForm,setShowForm]=useState(false);
   const[custName,setCustName]=useState("");const[custCity,setCustCity]=useState("");const[custAddr,setCustAddr]=useState("");
@@ -1465,7 +1471,7 @@ function MysteryGiftSection({settings,user,onAuth,products}){
         <p style={{fontSize:13,color:"#9a8f83",marginTop:8,maxWidth:480,margin:"8px auto 0"}}>Surprise monthly fabrics or send a beautiful gift to someone special</p>
       </div>
 
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:0,maxWidth:960,margin:"0 auto",borderRadius:16,overflow:"hidden",boxShadow:"0 8px 40px rgba(0,0,0,.08)",border:"1px solid rgba(201,168,76,.12)"}}>
+      <div className="mystery-grid" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:0,maxWidth:960,margin:"0 auto",borderRadius:16,overflow:"hidden",boxShadow:"0 8px 40px rgba(0,0,0,.08)",border:"1px solid rgba(201,168,76,.12)"}}>
 
         {/* ── LEFT: Mystery Box ──────────────────────── */}
         <div style={{background:"linear-gradient(160deg,#1a1612 0%,#2c1f0a 100%)",padding:"clamp(28px,4vw,44px)",position:"relative",overflow:"hidden"}}>
@@ -1729,7 +1735,6 @@ function Store({user,onLogout,onAccount,onAdmin,siteTheme,themeName}){
   const[abandonTimer,setAbandonTimer]=useState(null);
   const[priceDrop,setPriceDrop]=useState({});
   const[heroImgIdx,setHeroImgIdx]=useState(0);
-  const[cdTime,setCdTime]=useState({d:"00",h:"00",m:"00",s:"00"});
   const heroImgs=["👗","✨","🌸","🧵","💎"];
   const[modalProd,setModalProd]=useState(null);
   const[recentlyViewed,setRecentlyViewed]=useState(()=>{try{return JSON.parse(localStorage.getItem("jf_rv")||"[]");}catch{return [];}});
@@ -1820,30 +1825,7 @@ function Store({user,onLogout,onAccount,onAdmin,siteTheme,themeName}){
     <ImageZoom src={zoomImg} onClose={()=>setZoomImg(null)}/>
     <AIOutfitSuggester prods={prods} onFilter={setCat}/>
     {/* Countdown Banner - above announcement */}
-    {cdTime&&(
-      <div style={{background:"linear-gradient(135deg,#b91c1c,#dc2626)",padding:"9px clamp(14px,3vw,32px)",display:"flex",alignItems:"center",justifyContent:"center",gap:"clamp(10px,2vw,24px)",flexWrap:"wrap",borderBottom:"1px solid rgba(0,0,0,.15)"}}>
-        <div style={{display:"flex",alignItems:"center",gap:8,flexShrink:0}}>
-          <span style={{fontSize:14}}>🔥</span>
-          <div style={{fontFamily:"var(--t-hf,'Playfair Display',serif)",fontSize:"clamp(11px,1.4vw,14px)",fontWeight:700,color:"#fff",letterSpacing:.5}}>{settings.sale_title||"Eid Special Sale"}</div>
-          <span style={{fontSize:10,color:"rgba(255,255,255,.7)",fontStyle:"italic",fontFamily:"'Cormorant Garamond',serif",fontSize:"clamp(11px,1.3vw,14px)"}}>{settings.sale_text||"Up to 30% Off"}</span>
-        </div>
-        <div style={{display:"flex",gap:5,alignItems:"center",flexShrink:0}}>
-          {["d","h","m","s"].map((u,i)=>(
-            <div key={u} style={{display:"flex",alignItems:"center",gap:5}}>
-              {i>0&&<span style={{color:"rgba(255,255,255,.5)",fontWeight:700,fontSize:16,lineHeight:1,marginBottom:12}}>:</span>}
-              <div style={{textAlign:"center"}}>
-                <span style={{background:"rgba(0,0,0,.25)",color:"#fff",fontFamily:"var(--t-bf,'Jost',sans-serif)",fontSize:"clamp(16px,2.5vw,22px)",fontWeight:700,padding:"4px 8px",display:"block",minWidth:38,letterSpacing:1}}>{cdTime[u]}</span>
-                <span style={{fontSize:7,color:"rgba(255,255,255,.5)",letterSpacing:1.5,textTransform:"uppercase",display:"block",marginTop:3}}>{["Days","Hrs","Mins","Secs"][i]}</span>
-              </div>
-            </div>
-          ))}
-        </div>
-        <button onClick={()=>document.getElementById("prods")?.scrollIntoView({behavior:"smooth"})} style={{background:"var(--t-card)",color:"#b91c1c",border:"none",padding:"7px 18px",fontSize:9,fontWeight:800,letterSpacing:2,textTransform:"uppercase",cursor:"pointer",fontFamily:"inherit",flexShrink:0,transition:"all .2s"}} onMouseEnter={e=>{e.currentTarget.style.background="#fef2f2";}} onMouseLeave={e=>{e.currentTarget.style.background="#fff";}}>
-          Shop Now
-        </button>
-      </div>
-    )}
-    {/* Announcement */}
+        {/* Announcement */}
     <div style={{background:"#111",height:34,display:"flex",alignItems:"center",overflow:"hidden"}}>
       <div style={{display:"flex",animation:"annScroll 32s linear infinite",whiteSpace:"nowrap"}}>
         {[...ann,...ann].map((a,i)=><span key={i} style={{padding:"0 48px",fontSize:9,letterSpacing:2.5,color:"rgba(255,255,255,.75)",textTransform:"uppercase"}}>{"✦ "+a.trim()}</span>)}
@@ -2235,7 +2217,8 @@ function Store({user,onLogout,onAccount,onAdmin,siteTheme,themeName}){
     
     
 
-{/* FOOTER */}
+<RecentlyViewedStrip items={recentlyViewed} onOpenModal={openModal}/>
+    {/* FOOTER */}
     <footer style={{background:"#0a0907",color:"#e0dbd3",padding:"clamp(52px,6vw,80px) clamp(16px,4vw,60px) 28px"}}>
       <div className="footer-grid" style={{display:"grid",gridTemplateColumns:"1.8fr 1fr 1fr 1fr",gap:"clamp(24px,3.5vw,52px)",marginBottom:52,maxWidth:1200,margin:"0 auto 52px"}}>
         <div>
@@ -2273,10 +2256,38 @@ function Store({user,onLogout,onAccount,onAdmin,siteTheme,themeName}){
     <PWAInstallBtn/>
         {/* Product Modal */}
     {modalProd&&<ProductModal prod={modalProd} onClose={()=>setModalProd(null)} onAdd={addToCart} onWish={toggleWish} wished={wish.has(modalProd.id)}/>}
-    {cartOpen&&<CartPanel cart={cart} setCart={setCart} wa={wa} onClose={()=>setCartOpen(false)} user={user} settings={settings}/>}
+    {cartOpen&&<CartPanel cart={cart} setCart={setCart} wa={wa} onClose={()=>setCartOpen(false)} user={user} settings={settings} gift={gift} setGift={setGift}/>}
     {authModal&&<AuthModal mode={authModal} onClose={()=>setAuthModal(null)} onSuccess={()=>setAuthModal(null)}/>}
   </div>);
 }
+
+// FIX 10 — Recently Viewed Strip
+function RecentlyViewedStrip({items,onOpenModal}){
+  if(!items||items.length===0)return null;
+  return(
+    <div style={{padding:"24px clamp(16px,4vw,60px)",background:"var(--t-bg)",borderTop:"1px solid var(--t-border)"}}>
+      <div style={{fontSize:9,letterSpacing:3,color:"var(--t-accent)",textTransform:"uppercase",fontWeight:700,marginBottom:12}}>Recently Viewed</div>
+      <div style={{display:"flex",gap:10,overflowX:"auto",scrollSnapType:"x mandatory",paddingBottom:6}}>
+        {items.map(prod=>{
+          const img=prod.img1||prod.photo_url||"";
+          const price=Number(prod.sale_price||prod.price||0);
+          return(
+            <div key={prod.id} onClick={()=>onOpenModal&&onOpenModal(prod)} style={{flex:"0 0 130px",cursor:"pointer",scrollSnapAlign:"start",border:"1px solid var(--t-border)",background:"var(--t-card)",overflow:"hidden",transition:"transform .2s"}} onMouseEnter={e=>e.currentTarget.style.transform="translateY(-4px)"} onMouseLeave={e=>e.currentTarget.style.transform="none"}>
+              <div style={{aspectRatio:"3/4",background:"#f5f2ee",display:"flex",alignItems:"center",justifyContent:"center",fontSize:32,overflow:"hidden"}}>
+                {img?<img src={img} alt={prod.name} style={{width:"100%",height:"100%",objectFit:"cover"}} onError={e=>e.target.style.display="none"}/>:(prod.icon||"👗")}
+              </div>
+              <div style={{padding:"8px 10px"}}>
+                <div style={{fontSize:11,fontWeight:600,color:"var(--t-text)",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{prod.name}</div>
+                <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:13,fontWeight:700,color:"var(--t-accent)"}}>Rs.{price.toLocaleString()}</div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 
 function AccountPage({user,onBack}){
   const[orders,setOrders]=useState([]);const[wl,setWl]=useState([]);
@@ -3645,6 +3656,204 @@ function AAnalytics({settings={}}){
 
 /* ─ AReviews ─ */
 
+// FIX 9 — WA Broadcast
+function AWABroadcast(){
+  const[customers,setCustomers]=useState([]);
+  const[selected,setSelected]=useState(new Set());
+  const[msg,setMsg]=useState("");
+  const[manual,setManual]=useState("");
+  const[sending,setSending]=useState(false);
+  const[sent,setSent]=useState(0);
+  useEffect(()=>{
+    if(!sb)return;
+    sb.from("online_orders").select("customer_name,customer_email,customer_phone").limit(200)
+      .then(({data})=>{
+        if(!data)return;
+        const seen=new Set();const list=[];
+        data.forEach(o=>{
+          const key=o.customer_phone||o.customer_email||o.customer_name;
+          if(key&&!seen.has(key)){seen.add(key);list.push(o);}
+        });
+        setCustomers(list);
+      });
+  },[]);
+  function toggleAll(e){
+    if(e.target.checked)setSelected(new Set(customers.map((_,i)=>i)));
+    else setSelected(new Set());
+  }
+  function send(){
+    if(!msg.trim())return alert("Message likhna zaroori hai");
+    setSending(true);setSent(0);
+    const phones=manual.split(/
+|,/).map(p=>p.trim().replace(/\D/g,"")).filter(p=>p.length>=10);
+    const enc=encodeURIComponent(msg);
+    let delay=0;
+    phones.forEach(ph=>{
+      setTimeout(()=>{window.open(`https://wa.me/${ph}?text=${enc}`,"_blank");setSent(s=>s+1);},delay);
+      delay+=600;
+    });
+    if(!phones.length)toast("Manual numbers add karo","error");
+    setTimeout(()=>setSending(false),delay+500);
+  }
+  return(
+    <div>
+      <AH title="📣 WA Broadcast" sub="Customers ko WhatsApp message bhejo"/>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}} className="two-col">
+        <ACard style={{padding:18}}>
+          <div style={{fontWeight:700,fontSize:13,marginBottom:10}}>Message</div>
+          <textarea value={msg} onChange={e=>setMsg(e.target.value)} rows={6} placeholder="Assalam! Jameel Fabrics mein naya stock aa gaya! Aaj hi order karo 🎉" style={{width:"100%",padding:"9px 12px",border:"1px solid #e5e7eb",borderRadius:6,fontSize:13,outline:"none",resize:"vertical",fontFamily:"inherit",boxSizing:"border-box",marginBottom:12}}/>
+          <div style={{fontWeight:700,fontSize:13,marginBottom:6}}>Phone Numbers (ek line mein ek)</div>
+          <textarea value={manual} onChange={e=>setManual(e.target.value)} rows={5} placeholder={"0300-1234567
+0321-9876543"} style={{width:"100%",padding:"9px 12px",border:"1px solid #e5e7eb",borderRadius:6,fontSize:12,outline:"none",resize:"vertical",fontFamily:"inherit",boxSizing:"border-box",marginBottom:10}}/>
+          <div style={{fontSize:11,color:"#9ca3af",marginBottom:12}}>⚠️ Browser popup blocker allow karo. Har message 600ms gap se khulega.</div>
+          <button onClick={send} disabled={sending} style={{width:"100%",background:sending?"#6b7280":"#25D366",color:"#fff",border:"none",padding:12,borderRadius:6,fontSize:13,fontWeight:700,cursor:sending?"not-allowed":"pointer"}}>
+            {sending?`Sending... (${sent} sent)`:"📤 Generate & Open WA Links"}
+          </button>
+        </ACard>
+        <ACard style={{padding:18}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+            <div style={{fontWeight:700,fontSize:13}}>Past Customers ({customers.length})</div>
+            <label style={{display:"flex",alignItems:"center",gap:6,fontSize:12,cursor:"pointer"}}>
+              <input type="checkbox" onChange={toggleAll} checked={selected.size===customers.length&&customers.length>0} style={{accentColor:"#c9a84c"}}/>Select All
+            </label>
+          </div>
+          <div style={{maxHeight:340,overflowY:"auto",display:"flex",flexDirection:"column",gap:4}}>
+            {customers.length===0&&<div style={{color:"#9ca3af",fontSize:12,padding:16,textAlign:"center"}}>No customers yet</div>}
+            {customers.map((c,i)=>(
+              <label key={i} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 10px",borderRadius:6,background:selected.has(i)?"#f0fdf4":"#f9fafb",border:`1px solid ${selected.has(i)?"#86efac":"#e5e7eb"}`,cursor:"pointer",fontSize:12}}>
+                <input type="checkbox" checked={selected.has(i)} onChange={e=>{const s=new Set(selected);if(e.target.checked)s.add(i);else s.delete(i);setSelected(s);}} style={{accentColor:"#c9a84c"}}/>
+                <span style={{fontWeight:500}}>{c.customer_name||"Customer"}</span>
+                <span style={{color:"#6b7280",fontSize:11,marginLeft:"auto"}}>{c.customer_phone||c.customer_email||""}</span>
+              </label>
+            ))}
+          </div>
+        </ACard>
+      </div>
+    </div>
+  );
+}
+
+
+// FIX 11 — Udhaar / Credit Manager
+function AUdhaar(){
+  const[records,setRecords]=useState([]);
+  const[loading,setLoading]=useState(true);
+  const[form,setForm]=useState({customer_name:"",amount_owed:"",amount_paid:"",date:"",notes:""});
+  const[editId,setEditId]=useState(null);
+  const[search,setSearch]=useState("");
+  const[filter,setFilter]=useState("all");
+  const[payInput,setPayInput]=useState({});
+
+  useEffect(()=>loadData(),[]);
+  async function loadData(){
+    setLoading(true);
+    if(!sb){setLoading(false);return;}
+    const{data}=await sb.from("website_udhaar").select("*").order("created_at",{ascending:false});
+    setRecords(data||[]);setLoading(false);
+  }
+  async function save(){
+    if(!form.customer_name)return toast("Customer name required","error");
+    const payload={...form,amount_owed:Number(form.amount_owed)||0,amount_paid:Number(form.amount_paid)||0};
+    if(!payload.status)payload.status="pending";
+    if(sb){
+      if(editId)await sb.from("website_udhaar").update(payload).eq("id",editId);
+      else await sb.from("website_udhaar").insert({...payload,created_at:new Date().toISOString()});
+    }
+    setForm({customer_name:"",amount_owed:"",amount_paid:"",date:"",notes:""});
+    setEditId(null);loadData();toast("Saved!","success");
+  }
+  async function applyPayment(id){
+    const amt=Number(payInput[id]||0);if(!amt)return;
+    const rec=records.find(r=>r.id===id);if(!rec)return;
+    const newPaid=Number(rec.amount_paid||0)+amt;
+    const status=newPaid>=Number(rec.amount_owed)?"paid":"pending";
+    if(sb)await sb.from("website_udhaar").update({amount_paid:newPaid,status}).eq("id",id);
+    setPayInput(p=>({...p,[id]:""}));loadData();toast(`Rs.${amt.toLocaleString()} recorded`,"success");
+  }
+  async function markPaid(id){
+    const rec=records.find(r=>r.id===id);
+    if(sb)await sb.from("website_udhaar").update({status:"paid",amount_paid:Number(rec?.amount_owed||0)}).eq("id",id);
+    loadData();toast("Marked as paid","success");
+  }
+  async function del(id){
+    if(!window.confirm("Delete?"))return;
+    if(sb)await sb.from("website_udhaar").delete().eq("id",id);
+    loadData();
+  }
+
+  const filtered=records.filter(r=>{
+    const matchS=!search||r.customer_name?.toLowerCase().includes(search.toLowerCase());
+    const matchF=filter==="all"||(filter==="pending"&&r.status!=="paid")||(filter==="paid"&&r.status==="paid");
+    return matchS&&matchF;
+  });
+  const totalPending=records.filter(r=>r.status!=="paid").reduce((s,r)=>s+Number(r.amount_owed||0)-Number(r.amount_paid||0),0);
+
+  return(
+    <div>
+      <AH title="💰 Udhaar / Credit" sub="Customer ke pending balances track karo"/>
+      <div style={{background:"linear-gradient(135deg,#fef3c7,#fffbeb)",border:"1px solid #fde68a",borderRadius:10,padding:"16px 20px",marginBottom:20,display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:12}}>
+        <div>
+          <div style={{fontSize:12,color:"#92400e",fontWeight:600}}>Total Pending Balance</div>
+          <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:28,fontWeight:700,color:"#92400e"}}>Rs. {totalPending.toLocaleString()}</div>
+        </div>
+        <div style={{fontSize:11,color:"#92400e"}}>{records.filter(r=>r.status!=="paid").length} customers pending</div>
+      </div>
+      <ACard style={{padding:18,marginBottom:20}}>
+        <div style={{fontWeight:700,fontSize:14,marginBottom:12}}>{editId?"Edit Record":"Add New Udhaar"}</div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+          <div style={{gridColumn:"1/-1"}}><ALbl c="Customer Name *"/><AI value={form.customer_name} onChange={e=>setForm({...form,customer_name:e.target.value})} placeholder="e.g. Hamza Muhammadi"/></div>
+          <div><ALbl c="Amount Owed (Rs.)"/><AI type="number" value={form.amount_owed} onChange={e=>setForm({...form,amount_owed:e.target.value})}/></div>
+          <div><ALbl c="Amount Paid (Rs.)"/><AI type="number" value={form.amount_paid} onChange={e=>setForm({...form,amount_paid:e.target.value})}/></div>
+          <div><ALbl c="Date"/><AI type="date" value={form.date} onChange={e=>setForm({...form,date:e.target.value})}/></div>
+          <div><ALbl c="Notes"/><AI value={form.notes} onChange={e=>setForm({...form,notes:e.target.value})} placeholder="Optional note..."/></div>
+        </div>
+        <div style={{display:"flex",gap:8,marginTop:12}}>
+          <ABtn onClick={save} style={{background:"#111",color:"#fff"}}>{editId?"Update":"Add Record"}</ABtn>
+          {editId&&<ABtn onClick={()=>{setEditId(null);setForm({customer_name:"",amount_owed:"",amount_paid:"",date:"",notes:"",status:"pending"});}} style={{background:"#f3f4f6",color:"#374151"}}>Cancel</ABtn>}
+        </div>
+      </ACard>
+      <div style={{display:"flex",gap:10,marginBottom:14,flexWrap:"wrap"}}>
+        <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search customer..." style={{flex:1,minWidth:160,padding:"8px 12px",border:"1px solid #e5e7eb",borderRadius:6,fontSize:13,outline:"none"}}/>
+        {["all","pending","paid"].map(f=>(
+          <button key={f} onClick={()=>setFilter(f)} style={{padding:"7px 14px",borderRadius:6,fontSize:12,fontWeight:600,border:`1px solid ${filter===f?"#111":"#e5e7eb"}`,background:filter===f?"#111":"transparent",color:filter===f?"#fff":"#6b7280",cursor:"pointer",textTransform:"capitalize"}}>{f}</button>
+        ))}
+      </div>
+      {loading?<div style={{textAlign:"center",padding:32,color:"#9ca3af"}}>Loading...</div>:(
+        <ACard><div style={{overflowX:"auto"}}>
+          <table style={{width:"100%",borderCollapse:"collapse"}}>
+            <thead><tr>{["Customer","Owed","Paid","Balance","Status","Quick Pay","Actions"].map(h=><th key={h} className="adm-th">{h}</th>)}</tr></thead>
+            <tbody>
+              {filtered.length===0&&<tr><td colSpan={7} style={{padding:40,textAlign:"center",color:"#9ca3af"}}>No records</td></tr>}
+              {filtered.map(r=>{
+                const bal=Number(r.amount_owed||0)-Number(r.amount_paid||0);
+                return(
+                  <tr key={r.id} style={{borderBottom:"1px solid #f3f4f6"}}>
+                    <td className="adm-td"><div style={{fontWeight:600}}>{r.customer_name}</div>{r.notes&&<div style={{fontSize:11,color:"#9ca3af"}}>{r.notes}</div>}</td>
+                    <td className="adm-td" style={{fontWeight:600}}>Rs.{Number(r.amount_owed||0).toLocaleString()}</td>
+                    <td className="adm-td" style={{color:"#16a34a"}}>Rs.{Number(r.amount_paid||0).toLocaleString()}</td>
+                    <td className="adm-td"><span style={{fontWeight:700,color:bal>0?"#dc2626":"#16a34a"}}>Rs.{bal.toLocaleString()}</span></td>
+                    <td className="adm-td"><span style={{padding:"2px 10px",borderRadius:20,fontSize:11,fontWeight:600,background:r.status==="paid"?"#dcfce7":"#fef9c3",color:r.status==="paid"?"#16a34a":"#ca8a04"}}>{r.status==="paid"?"Paid":"Pending"}</span></td>
+                    <td className="adm-td"><div style={{display:"flex",gap:4}}>
+                      <input type="number" value={payInput[r.id]||""} onChange={e=>setPayInput(p=>({...p,[r.id]:e.target.value}))} placeholder="Rs." style={{width:70,padding:"5px 8px",border:"1px solid #e5e7eb",borderRadius:4,fontSize:12,outline:"none"}}/>
+                      <ABtn sm onClick={()=>applyPayment(r.id)} style={{background:"#dcfce7",color:"#16a34a"}}>✓</ABtn>
+                    </div></td>
+                    <td className="adm-td"><div style={{display:"flex",gap:4}}>
+                      {r.status!=="paid"&&<ABtn sm onClick={()=>markPaid(r.id)} style={{background:"#111",color:"#fff"}}>Paid</ABtn>}
+                      <ABtn sm onClick={()=>{setEditId(r.id);setForm({customer_name:r.customer_name,amount_owed:r.amount_owed,amount_paid:r.amount_paid,date:r.date||"",notes:r.notes||""});}} style={{background:"transparent",border:"1px solid #e5e7eb",color:"#374151"}}>✏️</ABtn>
+                      <ABtn sm onClick={()=>del(r.id)} style={{background:"#fee2e2",color:"#dc2626"}}>🗑️</ABtn>
+                    </div></td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div></ACard>
+      )}
+    </div>
+  );
+}
+
+
 function AdminPanel({onExit}){
   const[page,setPage]=useState("dashboard");
   const[col,setCol]=useState(false);
@@ -3679,6 +3888,9 @@ function AdminPanel({onExit}){
     {id:"analytics",ic:<AnalyticIc/>,lbl:"Analytics"},
     {id:"content",ic:<EditIc/>,lbl:"Website Content"},
     {id:"subscribers",ic:<MailIc/>,lbl:"Subscribers"},
+    {section:"Customers"},
+    {id:"broadcast",ic:<WaBcIc/>,lbl:"WA Broadcast"},
+    {id:"udhaar",ic:<UdhaarIc/>,lbl:"Udhaar / Credit"},
     {id:"brands",ic:<BrandIc/>,lbl:"Brands"},
     {section:"Settings"},
     {id:"theme",ic:<ThemeIc/>,lbl:"🎨 Theme"},
@@ -3704,6 +3916,8 @@ function AdminPanel({onExit}){
     analytics:()=><AAnalytics settings={settings||{}}/>,
     content:()=><AContent settings={settings||{}}/>,
     subscribers:()=><ASubs subs={subs||[]}/>,
+    broadcast:()=><AWABroadcast/>,
+    udhaar:()=><AUdhaar/>,
     settings:()=><ASettings settings={settings||{}}/>,
     brands:()=><ABrands/>,
     theme:()=><AThemeSettings settings={settings||{}} onSaved={refresh}/>,
@@ -3792,6 +4006,9 @@ function AdminPanel({onExit}){
 }
 
 /* SVG Icons */
+const WaBcIc=()=><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.5a16 16 0 0 0 5.55 5.55l.96-.96a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>;
+const UdhaarIc=()=><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>;
+
 const DashIc=()=><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>;
 const OrdIc=()=><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="m9 12 2 2 4-4"/></svg>;
 const PendIc=()=><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48 2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48 2.83-2.83"/></svg>;
@@ -3860,6 +4077,12 @@ export default function App(){
     setSiteTheme(name);
     try{localStorage.setItem("jf_theme",name);}catch{}
   }
+  // Theme change listener (for admin panel live preview)
+  useEffect(()=>{
+    const handler=e=>applyTheme(e.detail||"Black Gold");
+    window.addEventListener("jf-theme-change",handler);
+    return()=>window.removeEventListener("jf-theme-change",handler);
+  },[]);
   const toasts=useToast();
   useEffect(()=>{if(!sb)return;sb.auth.getSession().then(({data:{session}})=>setUser(session?.user||null));const{data:{subscription}}=sb.auth.onAuthStateChange((_e,s)=>setUser(s?.user||null));return()=>subscription.unsubscribe();},[]);
   useEffect(()=>{
@@ -3880,9 +4103,27 @@ export default function App(){
     }
     return()=>window.removeEventListener("hashchange",checkHash);
   },[]);
+  // FIX 7 — Google Analytics inject
+  useEffect(()=>{
+    if(!sb)return;
+    sb.from("website_settings").select("value").eq("key","ga_id").single()
+      .then(({data})=>{
+        const gaId=data?.value;
+        if(!gaId||!gaId.startsWith("G-"))return;
+        if(document.getElementById("jf-gtag-script"))return;
+        const s1=document.createElement("script");
+        s1.id="jf-gtag-script";s1.async=true;
+        s1.src=`https://www.googletagmanager.com/gtag/js?id=${gaId}`;
+        document.head.appendChild(s1);
+        const s2=document.createElement("script");s2.id="jf-gtag-init";
+        s2.textContent=`window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','${gaId}',{page_path:window.location.pathname});`;
+        document.head.appendChild(s2);
+      }).catch(()=>{});
+  },[]);
   async function logout(){if(sb)await sb.auth.signOut();setUser(null);toast("Logged out");setView("store");}
   return(<ErrorBoundary>
     <style>{G}</style>
+    <CustomCursor/>
     {view==="intro"&&<ErrorBoundary><Intro onEnter={()=>setView("store")} siteTheme={TH} themeName={siteTheme}/></ErrorBoundary>}
     {view==="store"&&<ErrorBoundary><Store user={user} onLogout={logout} onAccount={()=>user?setView("account"):null} onAdmin={()=>setShowAdminLogin(true)} siteTheme={TH} themeName={siteTheme}/></ErrorBoundary>}
     {view==="account"&&user&&<AccountPage user={user} onBack={()=>setView("store")}/>}
