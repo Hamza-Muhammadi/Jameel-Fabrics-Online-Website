@@ -1724,10 +1724,36 @@ function MysteryGiftSection({settings,user,onAuth,products}){
         <p style={{fontSize:13,color:"#9a8f83",marginTop:8,maxWidth:480,margin:"8px auto 0"}}>Surprise monthly fabrics or send a beautiful gift to someone special</p>
       </div>
 
-      <div className="mystery-grid" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:0,maxWidth:960,margin:"0 auto",borderRadius:16,overflow:"hidden",boxShadow:"0 8px 40px rgba(0,0,0,.08)",border:"1px solid rgba(201,168,76,.12)"}}>
+      <div style={{display:"flex",flexDirection:"column",gap:0,maxWidth:860,margin:"0 auto",borderRadius:16,overflow:"hidden",boxShadow:"0 8px 40px rgba(0,0,0,.08)",border:"1px solid rgba(201,168,76,.12)"}}>
 
-        {/* ── LEFT: Gift Sender ──────────────────────── */}
-        <div style={{background:"#fdfcf8",padding:"clamp(28px,4vw,44px)",position:"relative",borderRight:"1px solid rgba(201,168,76,.1)"}}>
+        {/* ── TOP: Mystery Box ──────────────────────── */}
+        <div style={{background:"linear-gradient(160deg,#1a1612 0%,#2c1f0a 100%)",padding:"clamp(28px,4vw,44px)",position:"relative",overflow:"hidden",borderBottom:"1px solid rgba(201,168,76,.15)"}}>
+          <div style={{position:"absolute",inset:0,backgroundImage:"radial-gradient(circle,rgba(201,168,76,.12) 1px,transparent 1px)",backgroundSize:"22px 22px",opacity:.5,pointerEvents:"none"}}/>
+          <div style={{position:"absolute",top:14,right:14,background:"#c9a84c",color:"#000",fontSize:8,fontWeight:800,letterSpacing:2,padding:"3px 10px",textTransform:"uppercase"}}>Mystery</div>
+          <div style={{position:"relative",zIndex:1,display:"grid",gridTemplateColumns:"1fr 1fr",gap:"clamp(24px,4vw,48px)",alignItems:"center"}} className="two-col">
+            <div>
+              <div style={{fontSize:"clamp(2.5rem,5vw,3.5rem)",marginBottom:10}}>🎁</div>
+              <h3 style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"clamp(20px,3vw,30px)",fontWeight:600,color:"#f5efe0",lineHeight:1.2,marginBottom:10}}>Monthly<br/>Fabric Box</h3>
+              <p style={{fontSize:12,color:"rgba(201,168,76,.65)",lineHeight:1.7,marginBottom:20}}>Curated surprise fabrics — dispatched every <strong style={{color:"#c9a84c"}}>{boxDate1}th & {boxDate2}th</strong></p>
+              <button onClick={()=>user?setSubOpen(true):onAuth("login")} style={{background:"#c9a84c",color:"#0a0907",border:"none",padding:"12px 28px",fontSize:11,fontWeight:800,letterSpacing:2,textTransform:"uppercase",cursor:"pointer",borderRadius:4,transition:"all .2s"}}>
+                Subscribe Now →
+              </button>
+            </div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+              {TIERS.map(t=>(
+                <div key={t.id} onClick={()=>setSelectedTier(t.id)} style={{padding:"12px",border:`1px solid ${selectedTier===t.id?t.color:"rgba(255,255,255,.08)"}`,background:selectedTier===t.id?"rgba(255,255,255,.06)":"transparent",cursor:"pointer",borderRadius:8,transition:"all .2s"}}>
+                  {t.popular&&<div style={{fontSize:7,color:"#c9a84c",fontWeight:700,letterSpacing:1,marginBottom:2}}>POPULAR</div>}
+                  <div style={{display:"flex",alignItems:"center",gap:4,marginBottom:4}}><span style={{fontSize:16}}>{t.icon}</span><span style={{fontWeight:700,fontSize:11,color:"#fff"}}>{t.id}</span></div>
+                  <div style={{fontSize:13,fontWeight:800,color:t.color}}>Rs.{t.price.toLocaleString()}</div>
+                  <div style={{fontSize:9,color:"rgba(255,255,255,.35)",marginTop:2}}>{t.items}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* ── BOTTOM: Gift Sender ──────────────────────── */}
+        <div style={{background:"#fdfcf8",padding:"clamp(28px,4vw,44px)",position:"relative"}}>
           <div style={{position:"absolute",top:14,right:14,background:"#f5f0e8",color:"#c9a84c",fontSize:8,fontWeight:800,letterSpacing:2,padding:"3px 10px",textTransform:"uppercase",border:"1px solid rgba(201,168,76,.2)"}}>Gift</div>
 
           <div style={{fontSize:"clamp(2.5rem,5vw,3.5rem)",marginBottom:10}}>💝</div>
@@ -1763,43 +1789,6 @@ function MysteryGiftSection({settings,user,onAuth,products}){
               window.open(`https://wa.me/${WA_NUM}?text=${encodeURIComponent(msg)}`,"_blank");
             }} style={{width:"100%",background:"transparent",color:"#c9a84c",border:"1px solid rgba(201,168,76,.4)",padding:"10px",fontSize:10,fontWeight:700,letterSpacing:1.5,textTransform:"uppercase",cursor:"pointer",borderRadius:4}}>
               📲 Share Gift Catalogue
-            </button>
-          </div>
-        </div>
-
-        {/* ── RIGHT: Mystery Box ─────────────────────── */}
-        <div style={{background:"linear-gradient(160deg,#1a1612 0%,#2c1f0a 100%)",padding:"clamp(28px,4vw,44px)",position:"relative",overflow:"hidden"}}>
-          <div style={{position:"absolute",inset:0,backgroundImage:"radial-gradient(circle,rgba(201,168,76,.12) 1px,transparent 1px)",backgroundSize:"22px 22px",opacity:.5,pointerEvents:"none"}}/>
-          <div style={{position:"absolute",top:14,right:14,background:"#c9a84c",color:"#000",fontSize:8,fontWeight:800,letterSpacing:2,padding:"3px 10px",textTransform:"uppercase"}}>Mystery</div>
-
-          <div style={{position:"relative",zIndex:1}}>
-            <div style={{fontSize:"clamp(2.5rem,5vw,3.5rem)",marginBottom:10}}>🎁</div>
-            <h3 style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"clamp(20px,3vw,30px)",fontWeight:600,color:"#f5efe0",lineHeight:1.2,marginBottom:10}}>Monthly<br/>Fabric Box</h3>
-            <p style={{fontSize:12,color:"rgba(201,168,76,.65)",lineHeight:1.7,marginBottom:20}}>Curated surprise fabrics — dispatched every <strong style={{color:"#c9a84c"}}>{boxDate1}th & {boxDate2}th</strong></p>
-
-            {/* Tier cards compact */}
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginBottom:20}}>
-              {TIERS.map(t=>(
-                <div key={t.id} onClick={()=>setSelectedTier(t.id)} style={{padding:"8px 10px",border:`1px solid ${selectedTier===t.id?t.color:"rgba(255,255,255,.08)"}`,background:selectedTier===t.id?"rgba(255,255,255,.06)":"transparent",cursor:"pointer",borderRadius:6,transition:"all .2s"}}>
-                  {t.popular&&<div style={{fontSize:7,color:"#c9a84c",fontWeight:700,letterSpacing:1,marginBottom:2}}>POPULAR</div>}
-                  <div style={{display:"flex",alignItems:"center",gap:4,marginBottom:2}}><span style={{fontSize:14}}>{t.icon}</span><span style={{fontWeight:700,fontSize:10,color:"#fff"}}>{t.id}</span></div>
-                  <div style={{fontSize:11,fontWeight:800,color:t.color}}>Rs.{t.price.toLocaleString()}</div>
-                  <div style={{fontSize:8,color:"rgba(255,255,255,.3)",marginTop:1}}>{t.items}</div>
-                </div>
-              ))}
-            </div>
-
-            {/* Gender */}
-            <div style={{display:"flex",gap:4,marginBottom:16}}>
-              {["Women","Men","Kids","Mix"].map(g=>(
-                <button key={g} onClick={()=>setGender(g)} style={{flex:1,padding:"5px 2px",fontSize:8,fontWeight:700,letterSpacing:.5,textTransform:"uppercase",border:`1px solid ${gender===g?"#c9a84c":"rgba(255,255,255,.1)"}`,background:gender===g?"rgba(201,168,76,.15)":"transparent",color:gender===g?"#c9a84c":"rgba(255,255,255,.3)",cursor:"pointer",borderRadius:3,transition:"all .2s"}}>{g}</button>
-              ))}
-            </div>
-
-            <button onClick={()=>user?setSubOpen(true):onAuth("login")} style={{width:"100%",background:"#c9a84c",color:"#000",border:"none",padding:"12px",fontSize:11,fontWeight:800,letterSpacing:2,textTransform:"uppercase",cursor:"pointer",borderRadius:4,transition:"all .2s"}}
-              onMouseEnter={e=>{e.currentTarget.style.background="#d4b555";}}
-              onMouseLeave={e=>{e.currentTarget.style.background="#c9a84c";}}>
-              Subscribe — {tier.id} · Rs.{tier.price.toLocaleString()}
             </button>
           </div>
         </div>
@@ -2518,23 +2507,6 @@ function Store({user,onLogout,onAccount,onAdmin,siteTheme,themeName}){
       </div>
     </section>
 
-    <section id="policies" style={{padding:"clamp(56px,7vw,88px) clamp(16px,4vw,60px)",background:"var(--t-card)",borderBottom:"1px solid #e8e4df"}}>
-      <div className="rv" style={{textAlign:"center",marginBottom:44}}>
-        <div style={{fontSize:9,letterSpacing:4,color:"var(--t-accent)",textTransform:"uppercase",fontWeight:700,marginBottom:10}}>Our Promise</div>
-        <div style={{fontFamily:"var(--t-hf,'Playfair Display',serif)",fontSize:"clamp(22px,3vw,36px)",fontWeight:700,color:"var(--t-text)"}}>Our Policies</div>
-      </div>
-      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(240px,1fr))",gap:16,maxWidth:1200,margin:"0 auto"}}>
-        {[
-          {ic:"🔄",title:"Easy Exchange",desc:"Not satisfied? Exchange within 3 days. Your satisfaction is our priority.",color:"#fef9f0"},
-          {ic:"✓",title:"Quality Assured",desc:"Every piece is personally inspected. We only sell what we would wear ourselves.",color:"#f0faf5"},
-          {ic:"📦",title:"Careful Packaging",desc:"Your order is packed with care to arrive in perfect condition.",color:"#f0f5ff"},
-          {ic:"💬",title:"WhatsApp Support",desc:"Direct access to the owner. Real human support, anytime.",color:"#fdf0ff"},
-          {ic:"🔒",title:"Secure Ordering",desc:"Your personal information is never shared. Complete privacy guaranteed.",color:"#fff5f0"},
-          {ic:"⚡",title:"Fast Delivery",desc:"Nationwide delivery in 3-5 working days.",color:"#f5fff0"},
-        ].map(p=><PolicyCard key={p.title} {...p}/>)}
-      </div>
-    </section>
-
     {/* REVIEWS */}
     <section id="reviews" style={{padding:"clamp(48px,6vw,72px) clamp(16px,4vw,60px)",background:"var(--t-card)",borderBottom:"1px solid #e8e4df"}}>
       <div className="rv" style={{textAlign:"center",marginBottom:36}}>
@@ -2544,67 +2516,53 @@ function Store({user,onLogout,onAccount,onAdmin,siteTheme,themeName}){
       {settings.show_reviews!=="false"&&<ReviewsSection/>}
     </section>
 
-    <section style={{padding:"clamp(48px,6vw,80px) clamp(16px,4vw,60px)",background:`${TH.surface}`,borderBottom:"1px solid var(--t-border)"}}>
-      <div style={{maxWidth:1100,margin:"0 auto"}}>
-        <div style={{textAlign:"center",marginBottom:40}}>
-          <div style={{fontSize:9,letterSpacing:4,color:"var(--t-accent)",textTransform:"uppercase",fontWeight:700,marginBottom:8}}>Who We Are</div>
-          <div style={{fontFamily:"var(--t-hf,'Playfair Display',serif)",fontSize:"clamp(22px,3vw,36px)",fontWeight:700,color:"var(--t-text)"}}>Our Story & Values</div>
+<RecentlyViewedStrip items={recentlyViewed} onOpenModal={openModal}/>
+
+    {/* ══ FOOTER ══ */}
+    <footer style={{background:"#0a0907",color:"#e0dbd3",padding:"clamp(52px,6vw,80px) clamp(16px,4vw,60px) 0"}}>
+
+      {/* Our Story + Why Choose Us */}
+      <div style={{maxWidth:1200,margin:"0 auto",paddingBottom:"clamp(40px,5vw,64px)",borderBottom:"1px solid rgba(255,255,255,.07)",display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(280px,1fr))",gap:"clamp(28px,4vw,52px)"}}>
+        <div>
+          <div style={{fontSize:8,letterSpacing:4,color:"#c9a84c",textTransform:"uppercase",marginBottom:8}}>Since 1975</div>
+          <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"clamp(20px,2.5vw,28px)",fontWeight:600,color:"#fff",lineHeight:1.2,marginBottom:12}}>{settings?.story_title||"Our Story"}</div>
+          <p style={{fontSize:12,color:"rgba(255,255,255,.45)",lineHeight:1.9,marginBottom:20}}>{settings?.story_text||"From elegant unstitched suits to fine embroidered fabric — every piece reflects our commitment to quality and trust."}</p>
+          <div style={{display:"flex",gap:16,flexWrap:"wrap"}}>
+            {[[settings?.story_stat1||"50+",settings?.story_label1||"Years of Trust"],[settings?.story_stat2||"10K+",settings?.story_label2||"Happy Customers"],[settings?.story_stat3||"500+",settings?.story_label3||"Products"]].map(([n,l],i)=>(
+              <div key={i} style={{textAlign:"center"}}>
+                <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:22,fontWeight:700,color:"#c9a84c",lineHeight:1}}>{n}</div>
+                <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:"rgba(255,255,255,.3)",marginTop:3}}>{l}</div>
+              </div>
+            ))}
+          </div>
         </div>
-        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(320px,1fr))",gap:28,alignItems:"start"}}>
-
-          {/* ── Card 1: Our Story (show if story_show !== false) ── */}
-          {settings?.story_show!=="false"&&(
-            <div style={{background:`${TH.card}`,borderRadius:12,padding:"clamp(24px,4vw,36px)",border:`1px solid ${TH.border}`}}>
-              <div style={{fontSize:9,letterSpacing:4,color:TH.accent,textTransform:"uppercase",marginBottom:8}}>Since 1975</div>
-              <h2 style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"clamp(22px,3vw,32px)",fontWeight:600,color:TH.text,lineHeight:1.2,marginBottom:16}}>{settings?.story_title||"Our Story"}</h2>
-              <p style={{fontSize:13,color:TH.muted,lineHeight:1.8,marginBottom:24}}>{settings?.story_text||"From elegant unstitched suits to fine embroidered fabric — every piece reflects our commitment to quality."}</p>
-              <div style={{display:"flex",gap:16,flexWrap:"wrap"}}>
-                {[[settings?.story_stat1||"50+",settings?.story_label1||"Years of Trust"],[settings?.story_stat2||"10K+",settings?.story_label2||"Happy Customers"],[settings?.story_stat3||"500+",settings?.story_label3||"Products"]].map(([n,l],i)=>(
-                  <div key={i} style={{textAlign:"center",padding:"10px 14px",background:TH.surface,borderRadius:8}}>
-                    <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:22,fontWeight:700,color:TH.accent,lineHeight:1}}>{n}</div>
-                    <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:TH.muted,marginTop:3}}>{l}</div>
-                  </div>
-                ))}
+        <div>
+          <div style={{fontSize:8,letterSpacing:4,color:"#c9a84c",textTransform:"uppercase",marginBottom:12}}>Why Choose Us</div>
+          <div style={{display:"flex",flexDirection:"column",gap:10}}>
+            {[["🔄","Easy Exchange","Exchange within 3 days. No questions asked."],["✅","Quality Assured","Every piece personally inspected."],["📦","Careful Packaging","Packed with care, arrives perfect."],["💬","WhatsApp Support","Direct access to the owner — real human."],["🚚","Fast Delivery","Nationwide delivery in 3-5 working days."],["🔒","Privacy Guaranteed","Your info is never shared."]].map(([ic,t,d])=>(
+              <div key={t} style={{display:"flex",gap:10,alignItems:"flex-start"}}>
+                <span style={{fontSize:14,flexShrink:0,marginTop:1,opacity:.85}}>{ic}</span>
+                <div><div style={{fontSize:12,fontWeight:600,color:"rgba(255,255,255,.75)",marginBottom:1}}>{t}</div><div style={{fontSize:11,color:"rgba(255,255,255,.3)",lineHeight:1.5}}>{d}</div></div>
               </div>
-            </div>
-          )}
-
-          {/* ── Card 2: Why Choose Us (show if features_show !== false) ── */}
-          {settings?.features_show!=="false"&&(
-            <div style={{background:`${TH.dark}`,borderRadius:12,padding:"clamp(24px,4vw,36px)"}}>
-              <div style={{fontSize:9,letterSpacing:4,color:TH.accent,textTransform:"uppercase",marginBottom:8,opacity:.7}}>Why Choose Us</div>
-              <h2 style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"clamp(22px,3vw,32px)",fontWeight:600,color:TH.darkText,lineHeight:1.2,marginBottom:20}}>{settings?.features_title||"Our Commitment to Excellence"}</h2>
-              <div style={{display:"flex",flexDirection:"column",gap:14}}>
-                {[
-                  [settings?.feat1_title||"Premium Brands",settings?.feat1_desc||"Gul Ahmed, Alkaram, Sapphire & all top brands — 100% genuine.","🧵"],
-                  [settings?.feat2_title||"50+ Years Experience",settings?.feat2_desc||"Serving families since 1975. Generations of trust.","⭐"],
-                  [settings?.feat3_title||"All Categories",settings?.feat3_desc||"Women, Men, Kids, Abayas, Bedsheets & more.","👗"],
-                  [settings?.feat4_title||"Nationwide Delivery",settings?.feat4_desc||"Fast & secure delivery across Pakistan.","🚚"],
-                  [settings?.feat5_title||"Easy Online Shopping",settings?.feat5_desc||"Browse, order, delivered to your door.","📱"],
-                  [settings?.feat6_title||"WhatsApp Support",settings?.feat6_desc||"Instant support via WhatsApp anytime.","💬"],
-                ].map(([title,desc,icon],i)=>(
-                  <div key={i} style={{display:"flex",gap:12,alignItems:"flex-start"}}>
-                    <span style={{fontSize:16,flexShrink:0,marginTop:1}}>{icon}</span>
-                    <div>
-                      <div style={{fontSize:13,fontWeight:600,color:TH.darkText,marginBottom:2}}>{title}</div>
-                      <div style={{fontSize:11,color:`${TH.darkText}88`,lineHeight:1.6}}>{desc}</div>
-                    </div>
-                  </div>
-                ))}
+            ))}
+          </div>
+        </div>
+        {/* Policies */}
+        <div>
+          <div style={{fontSize:8,letterSpacing:4,color:"#c9a84c",textTransform:"uppercase",marginBottom:12}}>Our Policies</div>
+          <div style={{display:"flex",flexDirection:"column",gap:8}}>
+            {[["🔄","Exchange Policy","3 days exchange on all products"],["💰","Payment","Advance payment required. EasyPaisa / JazzCash / Bank"],["🚚","Delivery","Pak Post, TCS, Leopard — 3-5 days"],["📦","Mystery Box","Non-refundable — quality guaranteed"],["🎁","Gift Orders","Dispatched in 2-3 business days"],["📞","Contact","WhatsApp: "+(settings?.phone||"03228722232")]].map(([ic,t,d])=>(
+              <div key={t} style={{display:"flex",gap:8,alignItems:"flex-start",padding:"6px 0",borderBottom:"1px solid rgba(255,255,255,.04)"}}>
+                <span style={{fontSize:12,flexShrink:0,opacity:.7}}>{ic}</span>
+                <div><div style={{fontSize:11,fontWeight:600,color:"rgba(255,255,255,.6)"}}>{t}</div><div style={{fontSize:10,color:"rgba(255,255,255,.25)",lineHeight:1.5}}>{d}</div></div>
               </div>
-            </div>
-          )}
-
+            ))}
+          </div>
         </div>
       </div>
-    </section>
-    
-    
 
-<RecentlyViewedStrip items={recentlyViewed} onOpenModal={openModal}/>
-    {/* FOOTER */}
-    <footer style={{background:"#0a0907",color:"#e0dbd3",padding:"clamp(52px,6vw,80px) clamp(16px,4vw,60px) 28px"}}>
-      <div className="footer-grid" style={{display:"grid",gridTemplateColumns:"1.8fr 1fr 1fr 1fr",gap:"clamp(24px,3.5vw,52px)",marginBottom:52,maxWidth:1200,margin:"0 auto 52px"}}>
+      {/* Main footer links row */}
+      <div className="footer-grid" style={{display:"grid",gridTemplateColumns:"1.8fr 1fr 1fr 1fr",gap:"clamp(24px,3.5vw,52px)",padding:"clamp(36px,4vw,52px) 0 clamp(24px,3vw,40px)",maxWidth:1200,margin:"0 auto"}}>
         <div>
           <div style={{fontFamily:"var(--t-hf,'Playfair Display',serif)",fontSize:18,fontWeight:900,letterSpacing:4,color:"#fff",marginBottom:4}}>{settings.store_name||"JAMEEL FABRICS"}</div>
           <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:10,letterSpacing:4,color:"rgba(255,255,255,.3)",marginBottom:16,fontStyle:"italic"}}>Kunjah · Est. Punjab</div>
@@ -2622,11 +2580,11 @@ function Store({user,onLogout,onAccount,onAdmin,siteTheme,themeName}){
           </div>
         ))}
       </div>
-      {/* Newsletter subscribe */}
+      {/* Newsletter */}
       <NewsletterBar/>
-      <div style={{borderTop:"1px solid rgba(255,255,255,.07)",paddingTop:20,maxWidth:1200,margin:"0 auto",display:"flex",justifyContent:"space-between",flexWrap:"wrap",gap:8}}>
+      <div style={{borderTop:"1px solid rgba(255,255,255,.07)",paddingTop:20,paddingBottom:28,maxWidth:1200,margin:"0 auto",display:"flex",justifyContent:"space-between",flexWrap:"wrap",gap:8}}>
         <div style={{fontSize:9,color:"rgba(255,255,255,.18)",letterSpacing:1}}>© 2026 {settings.store_name||"JAMEEL FABRICS KUNJAH"}. All Rights Reserved.</div>
-        <div style={{fontSize:9,color:"rgba(255,255,255,.18)",letterSpacing:1}}>Premium Pakistani Clothing</div>
+        <div style={{fontSize:9,color:"rgba(255,255,255,.18)",letterSpacing:1}}>Premium Pakistani Clothing · Est. 1975 · Kunjah, Gujrat</div>
       </div>
     </footer>
     {/* Browsing counter */}
@@ -3590,7 +3548,7 @@ function AProducts({products,onRefresh}){
       const res=await sb.from("products").update(data).eq("id",editP.id);
       err=res.error;
     }else{
-      const res=await sb.from("products").insert({...data,website_status:"approved",active:true,created_at:new Date().toISOString()});
+      const res=await sb.from("products").insert({...data,website_status:"approved",active:true});
       err=res.error;
     }
     if(err){
@@ -3711,7 +3669,7 @@ function AOrders({orders,wa}){
             <td style={{padding:"12px 14px",fontSize:12,color:"#6b7280"}}>{(o.items||[]).length}</td>
             <td style={{padding:"12px 14px",fontWeight:700,fontSize:13}}>Rs.{Number(o.total).toLocaleString()}</td>
             <td style={{padding:"12px 14px"}}><Bdg c={o.status==="pending"?"y":o.status==="confirmed"?"g":"b"}>{o.status}</Bdg></td>
-            <td style={{padding:"12px 14px",fontSize:11,color:"#9ca3af"}}>{new Date(o.created_at).toLocaleDateString()}</td>
+            <td style={{padding:"12px 14px",fontSize:11,color:"#9ca3af"}}>{new Date(o.created_at).toLocaleString("en-PK",{timeZone:"Asia/Karachi",day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"})}</td>
             <td style={{padding:"12px 14px"}}><div style={{display:"flex",gap:4}}>
               {o.status==="pending"&&<ABtn sm onClick={()=>upd(o.id,"confirmed")} style={{background:"#dcfce7",color:"#16a34a"}}>Confirm</ABtn>}
               {o.status==="confirmed"&&<ABtn sm onClick={()=>upd(o.id,"delivered")} style={{background:"#dbeafe",color:"#2563eb"}}>Delivered</ABtn>}
