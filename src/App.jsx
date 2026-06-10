@@ -3657,26 +3657,41 @@ function AProducts({products,onRefresh}){
   </div>);
 }
 function AOrders({orders,wa}){
-  async function upd(id,status){if(!sb)return;await sb.from("online_orders").update({status}).eq("id",id);toast("Status: "+status,"success");window.location.reload();}
+  const[list,setList]=useState(orders||[]);
+  useEffect(()=>setList(orders||[]),[orders]);
+  async function upd(id,status){
+    if(!sb)return;
+    await sb.from("online_orders").update({status}).eq("id",id);
+    setList(l=>l.map(o=>o.id===id?{...o,status}:o));
+    toast("Status: "+status,"success");
+  }
+  async function del(id){
+    if(!sb||!window.confirm("Delete this order?"))return;
+    await sb.from("online_orders").delete().eq("id",id);
+    setList(l=>l.filter(o=>o.id!==id));
+    toast("Order deleted","success");
+  }
   return(<div><AH title="Orders" sub="WhatsApp se aaye orders"/>
     <ACard><div style={{overflowX:"auto"}}>
       <table style={{width:"100%",borderCollapse:"collapse"}}>
         <thead><tr style={{background:"#f9fafb",borderBottom:"1px solid #e5e7eb"}}>{["Order","Customer","Items","Total","Status","Date","Actions"].map(h=><th key={h} style={{padding:"10px 14px",fontSize:11,fontWeight:600,color:"#6b7280",textAlign:"left",textTransform:"uppercase",letterSpacing:.5,whiteSpace:"nowrap"}}>{h}</th>)}</tr></thead>
         <tbody>
-          {orders.map(o=><tr key={o.id} style={{borderBottom:"1px solid #f3f4f6"}}>
+          {list.map(o=><tr key={o.id} style={{borderBottom:"1px solid #f3f4f6"}}>
             <td style={{padding:"12px 14px",fontWeight:700,color:"var(--t-accent)",fontSize:12}}>#{o.id.slice(-6).toUpperCase()}</td>
             <td style={{padding:"12px 14px"}}><div style={{fontWeight:600,fontSize:13,color:"var(--t-text)"}}>{o.customer_name||"Customer"}</div><div style={{fontSize:11,color:"#9ca3af"}}>{o.customer_email||""}</div></td>
             <td style={{padding:"12px 14px",fontSize:12,color:"#6b7280"}}>{(o.items||[]).length}</td>
             <td style={{padding:"12px 14px",fontWeight:700,fontSize:13}}>Rs.{Number(o.total).toLocaleString()}</td>
             <td style={{padding:"12px 14px"}}><Bdg c={o.status==="pending"?"y":o.status==="confirmed"?"g":"b"}>{o.status}</Bdg></td>
             <td style={{padding:"12px 14px",fontSize:11,color:"#9ca3af"}}>{new Date(o.created_at).toLocaleString("en-PK",{timeZone:"Asia/Karachi",day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"})}</td>
-            <td style={{padding:"12px 14px"}}><div style={{display:"flex",gap:4}}>
-              {o.status==="pending"&&<ABtn sm onClick={()=>upd(o.id,"confirmed")} style={{background:"#dcfce7",color:"#16a34a"}}>Confirm</ABtn>}
+            <td style={{padding:"12px 14px"}}><div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
+              {o.status==="pending"&&<ABtn sm onClick={()=>upd(o.id,"confirmed")} style={{background:"#dcfce7",color:"#16a34a"}}>✓ Confirm</ABtn>}
               {o.status==="confirmed"&&<ABtn sm onClick={()=>upd(o.id,"delivered")} style={{background:"#dbeafe",color:"#2563eb"}}>Delivered</ABtn>}
+              {o.status==="delivered"&&<ABtn sm onClick={()=>upd(o.id,"confirmed")} style={{background:"#f3f4f6",color:"#374151"}}>↩ Undo</ABtn>}
               <a href={"https://wa.me/"+wa} target="_blank" rel="noopener noreferrer"><ABtn sm style={{background:"#25D366",color:"#fff"}}>WA</ABtn></a>
+              <ABtn sm onClick={()=>del(o.id)} style={{background:"#fee2e2",color:"#dc2626"}}>Del</ABtn>
             </div></td>
           </tr>)}
-          {!orders.length&&<tr><td colSpan={7} style={{padding:44,textAlign:"center",color:"#9ca3af"}}>No orders yet</td></tr>}
+          {!list.length&&<tr><td colSpan={7} style={{padding:44,textAlign:"center",color:"#9ca3af"}}>No orders yet</td></tr>}
         </tbody>
       </table>
     </div></ACard>
@@ -3686,6 +3701,7 @@ function ACoupons({coupons,onRefresh}){
   const[f,setF]=useState({code:"",type:"percent",value:"",min_order:"",expires_at:"",active:true});
   async function save(){if(!sb||!f.code||!f.value){toast("Code and value required","error");return;}await sb.from("coupons").insert({...f,code:f.code.toUpperCase(),value:parseFloat(f.value),min_order:parseFloat(f.min_order)||0,expires_at:f.expires_at||null});toast("Created!","success");setF({code:"",type:"percent",value:"",min_order:"",expires_at:"",active:true});onRefresh();}
   async function del(id){if(!sb||!window.confirm("Delete?"))return;await sb.from("coupons").delete().eq("id",id);onRefresh();}
+  async function toggle(id,active){if(!sb)return;await sb.from("coupons").update({active:!active}).eq("id",id);onRefresh();}
   return(<div><AH title="Coupons" sub="Discount codes manage karo"/>
     <ACard style={{padding:20,marginBottom:20}}>
       <div style={{fontSize:15,fontWeight:600,marginBottom:14,color:"var(--t-text)"}}>Create Coupon</div>
@@ -3700,7 +3716,10 @@ function ACoupons({coupons,onRefresh}){
     </ACard>
     {coupons.map(c=><ACard key={c.id} style={{padding:"16px 20px",marginBottom:10,display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:12}}>
       <div><div style={{fontFamily:"var(--t-hf,'Playfair Display',serif)",fontSize:20,fontWeight:700,letterSpacing:2,color:"var(--t-text)"}}>{c.code}</div><div style={{fontSize:12,color:"#9ca3af",marginTop:4}}>{c.type==="percent"?c.value+"%":"Rs."+c.value} off{c.min_order?" - Min Rs."+c.min_order:""}{c.expires_at?" - Expires "+new Date(c.expires_at).toLocaleDateString():""}</div><div style={{display:"flex",gap:6,marginTop:6}}><Bdg c={c.active?"g":""}>{c.active?"Active":"Inactive"}</Bdg><Bdg c="">{c.used_count||0} used</Bdg></div></div>
-      <ABtn onClick={()=>del(c.id)} style={{background:"#fee2e2",color:"#dc2626"}}>Delete</ABtn>
+      <div style={{display:"flex",gap:6}}>
+        <ABtn onClick={()=>toggle(c.id,c.active)} style={{background:c.active?"#fef9c3":"#dcfce7",color:c.active?"#92400e":"#16a34a"}}>{c.active?"Deactivate":"Activate"}</ABtn>
+        <ABtn onClick={()=>del(c.id)} style={{background:"#fee2e2",color:"#dc2626"}}>Delete</ABtn>
+      </div>
     </ACard>)}
   </div>);
 }
@@ -3772,19 +3791,28 @@ function AContent({settings}){
     r.readAsDataURL(file);
   }
 
-  // Sections config
+  // Sections config — visKey = the setting key for show/hide toggle
   const sections=[
     {t:"🏪 Store Info",fields:[["store_name","Store Name"],["addr1","Address Line 1"],["addr2","Address Line 2"],["map_url","Google Map Link (paste from Google Maps)"],["hours","Working Hours"],["phone","Phone Number"]]},
     {t:"🔗 Social Links",fields:[["wa_number","WhatsApp Number"],["insta","Instagram URL"],["fb","Facebook URL"],["tiktok","TikTok URL"]]},
-    {t:"📢 Announcement Bar",fields:[["announcement","Messages (pipe | se alag karo)",true]]},
+    {t:"📢 Announcement Bar",fields:[["announcement","Messages (pipe | se alag karo)",true]],visKey:"show_announcement",visDefault:"true"},
     {t:"🏠 Hero Section",fields:[["hlabel","Hero Label"],["hsub","Tagline"],["about","About Text",true]]},
-    {t:"🏷️ Brand Ticker",fields:[["ticker_brands","Brands (· se alag karo)",true]]},
+    {t:"🏷️ Brand Ticker",fields:[["ticker_brands","Brands (· se alag karo)",true]],visKey:"show_brand_ticker",visDefault:"true"},
     {t:"📊 Stats",fields:[["sold_count","Sold Count Text"]]},
-    {t:"🗺️ Countdown Timer",fields:[["sale_title","Sale Title"],["sale_text","Sale Subtitle"],["sale_end_date","End Date",false,true]]},
-    {t:"📖 Our Story",fields:[["our_story_title","Section Title"],["story_text","Story Text",true],["story_stat1","Stat 1 Number"],["story_label1","Stat 1 Label"],["story_stat2","Stat 2 Number"],["story_label2","Stat 2 Label"],["story_stat3","Stat 3 Number"],["story_label3","Stat 3 Label"]]},
-    {t:"✨ Why Choose Us",fields:[["why_us_title","Section Title"],["feat1_title","Feature 1 Title"],["feat1_desc","Feature 1 Desc"],["feat2_title","Feature 2 Title"],["feat2_desc","Feature 2 Desc"],["feat3_title","Feature 3 Title"],["feat3_desc","Feature 3 Desc"],["feat4_title","Feature 4 Title"],["feat4_desc","Feature 4 Desc"]]},
+    {t:"🗺️ Countdown Timer",fields:[["sale_title","Sale Title"],["sale_text","Sale Subtitle"],["sale_end_date","End Date",false,true]],visKey:"show_countdown",visDefault:"true"},
+    {t:"📖 Our Story",fields:[["our_story_title","Section Title"],["story_text","Story Text",true],["story_stat1","Stat 1 Number"],["story_label1","Stat 1 Label"],["story_stat2","Stat 2 Number"],["story_label2","Stat 2 Label"],["story_stat3","Stat 3 Number"],["story_label3","Stat 3 Label"]],visKey:"show_our_story",visDefault:"true"},
+    {t:"✨ Why Choose Us",fields:[["why_us_title","Section Title"],["feat1_title","Feature 1 Title"],["feat1_desc","Feature 1 Desc"],["feat2_title","Feature 2 Title"],["feat2_desc","Feature 2 Desc"],["feat3_title","Feature 3 Title"],["feat3_desc","Feature 3 Desc"],["feat4_title","Feature 4 Title"],["feat4_desc","Feature 4 Desc"]],visKey:"show_why_us",visDefault:"true"},
     {t:"🖼️ Hero Box (Right Panel)",fields:[["hero_box_title","Title"],["hero_box_sub","Line 1"],["hero_box_sub2","Line 2"]]},
     {t:"✨ Features Section",fields:[["features_title","Section Title"],["feat1_title","Feature 1 Title"],["feat1_desc","Feature 1 Description"],["feat2_title","Feature 2 Title"],["feat2_desc","Feature 2 Description"],["feat3_title","Feature 3 Title"],["feat3_desc","Feature 3 Description"],["feat4_title","Feature 4 Title"],["feat4_desc","Feature 4 Description"],["feat5_title","Feature 5 Title"],["feat5_desc","Feature 5 Description"],["feat6_title","Feature 6 Title"],["feat6_desc","Feature 6 Description"]]},
+  ];
+
+  // Visibility-only sections (no text content to edit)
+  const visSections=[
+    {label:"🎁 Mystery Box Section",key:"show_mystery",def:"true"},
+    {label:"🤖 AI Outfit Suggester",key:"show_ai_suggester",def:"true"},
+    {label:"⭐ Reviews Section",key:"show_reviews",def:"true"},
+    {label:"👑 VIP Collection",key:"show_vip",def:"true"},
+    {label:"📦 Mystery Subscription Active",key:"sub_active",def:"true"},
   ];
 
   const AI2=({k,placeholder,rows=1})=>rows>1
@@ -3814,6 +3842,23 @@ function AContent({settings}){
               }
             </div>
           ))}
+          {sec.visKey&&(
+            <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",fontSize:12,marginTop:8,paddingTop:10,borderTop:"1px solid #f3f4f6"}}>
+              <input type="checkbox" checked={f[sec.visKey]!=="false"&&(f[sec.visKey]||sec.visDefault||"true")!=="false"} onChange={e=>updateF(sec.visKey,e.target.checked?"true":"false")} style={{accentColor:"#c9a84c",width:15,height:15,flexShrink:0}}/>
+              <span style={{color:"#374151",fontWeight:500}}>Website pe dikhao</span>
+            </label>
+          )}
+        </ACard>
+      ))}
+
+      {/* Visibility-only sections */}
+      {visSections.map(vs=>(
+        <ACard key={vs.key} style={{padding:16,marginBottom:0,display:"flex",alignItems:"center",justifyContent:"space-between",gap:12}}>
+          <div style={{fontSize:13,fontWeight:600,color:"var(--t-text)"}}>{vs.label}</div>
+          <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",fontSize:12,flexShrink:0}}>
+            <input type="checkbox" checked={f[vs.key]!=="false"&&(f[vs.key]||vs.def||"true")!=="false"} onChange={e=>updateF(vs.key,e.target.checked?"true":"false")} style={{accentColor:"#c9a84c",width:16,height:16}}/>
+            <span style={{color:"#374151",fontWeight:500,whiteSpace:"nowrap"}}>{f[vs.key]==="false"?"Hidden":"Visible"}</span>
+          </label>
         </ACard>
       ))}
 
@@ -3824,9 +3869,9 @@ function AContent({settings}){
         {f.hero_banner_url&&<img src={f.hero_banner_url} alt="" style={{width:"100%",maxHeight:100,objectFit:"cover",borderRadius:4,marginBottom:8}}/>}
         <ALbl c="Caption"/>
         <AI value={f.hero_banner_caption||""} onChange={e=>updateF("hero_banner_caption",e.target.value)} placeholder="e.g. Eid Sale — 30% Off"/>
-        <label style={{display:"flex",alignItems:"center",gap:8,marginTop:8,cursor:"pointer",fontSize:12}}>
+        <label style={{display:"flex",alignItems:"center",gap:8,marginTop:8,paddingTop:8,borderTop:"1px solid #f3f4f6",cursor:"pointer",fontSize:12}}>
           <input type="checkbox" checked={f.hero_banner_show==="true"} onChange={e=>updateF("hero_banner_show",e.target.checked?"true":"false")} style={{accentColor:"#c9a84c"}}/>
-          Website pr dikhao
+          <span style={{fontWeight:500}}>Website pe dikhao</span>
         </label>
       </ACard>
 
@@ -3842,36 +3887,11 @@ function AContent({settings}){
         <div style={{marginTop:8}}><ALbl c="Sub Line 2"/><AI value={f.hero_box_sub2||""} onChange={e=>updateF("hero_box_sub2",e.target.value)} placeholder="Crafted for the discerning"/></div>
       </ACard>
 
-      {/* Hero Box Image + Show/Hide Cards */}
+      {/* Hero Box Image */}
       <ACard style={{padding:16}}>
         <div style={{fontSize:13,fontWeight:700,marginBottom:12,color:"var(--t-text)"}}>🖼️ Hero Box Image</div>
         <input type="file" accept="image/*" onChange={e=>{const file=e.target.files[0];if(!file)return;const r=new FileReader();r.onload=ev=>updateF("hero_box_img",ev.target.result);r.readAsDataURL(file);}} style={{fontSize:11,marginBottom:8,display:"block",width:"100%"}}/>
         {f.hero_box_img&&<img src={f.hero_box_img} alt="" style={{width:"100%",maxHeight:80,objectFit:"cover",borderRadius:4,marginBottom:6}}/>}
-      </ACard>
-
-      <ACard style={{padding:16,gridColumn:"1/-1"}}>
-        <div style={{fontSize:13,fontWeight:700,marginBottom:12,color:"var(--t-text)"}}>👁️ Section Visibility Controls</div>
-        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:12}}>
-          {[
-            ["show_announcement","📢 Announcement Bar","true"],
-            ["show_countdown","⏰ Countdown Timer","true"],
-            ["show_our_story","📖 Our Story Section","true"],
-            ["show_why_us","✨ Why Choose Us","true"],
-            ["show_mystery","🎁 Mystery Box Section","true"],
-            ["show_ai_suggester","🤖 AI Outfit Suggester","true"],
-            ["show_reviews","⭐ Reviews Section","true"],
-            ["show_brand_ticker","🏷️ Brand Ticker Bar","true"],
-            ["show_vip","👑 VIP Collection","true"],
-            ["hero_banner_show","🖼️ Hero Banner","false"],
-            ["video_show","🎥 Video Section","false"],
-            ["sub_active","📦 Mystery Subscription","true"],
-          ].map(([key,label,defaultVal])=>(
-            <label key={key} style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",fontSize:12,padding:"8px 10px",border:"1px solid #e5e7eb",borderRadius:6,background:f[key]===(f[key]==="false"?"false":"false")?"#f9fafb":"transparent"}}>
-              <input type="checkbox" checked={f[key]!=="false"&&(f[key]||defaultVal)!=="false"} onChange={e=>updateF(key,e.target.checked?"true":"false")} style={{accentColor:"#c9a84c",width:16,height:16,flexShrink:0}}/>
-              <span>{label}</span>
-            </label>
-          ))}
-        </div>
       </ACard>
 
       {/* Video Upload */}
@@ -3883,9 +3903,9 @@ function AContent({settings}){
         {vidUploading&&<div style={{fontSize:11,color:"var(--t-accent)"}}>⏳ Uploading...</div>}
         {f.video_url&&!vidUploading&&<div style={{fontSize:11,color:"#16a34a",marginBottom:4}}>✅ Video ready</div>}
         <div style={{marginTop:4}}><ALbl c="Ya URL paste karo"/><AI value={f.video_url||""} onChange={e=>updateF("video_url",e.target.value)} placeholder="https://..."/></div>
-        <label style={{display:"flex",alignItems:"center",gap:8,marginTop:8,cursor:"pointer",fontSize:12}}>
-          <input type="checkbox" checked={f.video_show==="true"} onChange={e=>updateF("video_show",e.target.checked?"true":"false")} style={{accentColor:"#c9a84c"}}/>
-          Video dikhao
+        <label style={{display:"flex",alignItems:"center",gap:8,marginTop:8,paddingTop:8,borderTop:"1px solid #f3f4f6",cursor:"pointer",fontSize:12}}>
+          <input type="checkbox" checked={f.video_show==="true"} onChange={e=>updateF("video_show",e.target.checked?"true":"false")} style={{accentColor:"#c9a84c",width:15,height:15}}/>
+          <span style={{fontWeight:500}}>Website pe dikhao</span>
         </label>
       </ACard>
     </div>
@@ -3956,32 +3976,53 @@ function ATrendAlerts({products}){
   </div>);
 }
 
-function ASubs({subs}){
-  const safeSubs=subs||[];
+function ASubs(){
   const[tab,setTab]=useState("subscribers");
+  const[newsletters,setNewsletters]=useState([]);
   const[subOrders,setSubOrders]=useState([]);
-  const[users,setUsers]=useState([]);
   const[loading,setLoading]=useState(false);
 
-  useEffect(()=>{
+  useEffect(()=>{load();},[]);
+
+  async function load(){
     if(!sb)return;
     setLoading(true);
-    Promise.all([
+    const[nlRes,boxRes]=await Promise.all([
+      sb.from("subscribers").select("*").order("subscribed_at",{ascending:false}),
       sb.from("subscriptions").select("*").order("created_at",{ascending:false}),
-      sb.auth.admin?sb.auth.admin.listUsers():Promise.resolve({data:{users:[]}}),
-    ]).then(([ordRes,userRes])=>{
-      setSubOrders(ordRes.data||[]);
-      setUsers(userRes.data?.users||[]);
-      setLoading(false);
-    });
-  },[]);
+    ]);
+    setNewsletters(nlRes.data||[]);
+    setSubOrders(boxRes.data||[]);
+    setLoading(false);
+  }
+
+  async function delSub(id){
+    if(!sb||!window.confirm("Delete subscriber?"))return;
+    await sb.from("subscribers").delete().eq("id",id);
+    setNewsletters(n=>n.filter(x=>x.id!==id));
+    toast("Subscriber deleted","success");
+  }
+
+  async function delBox(id){
+    if(!sb||!window.confirm("Delete box order?"))return;
+    await sb.from("subscriptions").delete().eq("id",id);
+    setSubOrders(n=>n.filter(x=>x.id!==id));
+    toast("Deleted","success");
+  }
+
+  async function updBoxStatus(id,status){
+    if(!sb)return;
+    await sb.from("subscriptions").update({status}).eq("id",id);
+    setSubOrders(n=>n.map(x=>x.id===id?{...x,status}:x));
+    toast("Status updated","success");
+  }
 
   function expSubs(){
-    const csv="Email,Date\n"+safeSubs.map(s=>s.email+","+new Date(s.subscribed_at).toLocaleDateString()).join("\n");
+    const csv="Email,Date\n"+newsletters.map(s=>s.email+","+new Date(s.subscribed_at||"").toLocaleDateString()).join("\n");
     const a=document.createElement("a");a.href="data:text/csv,"+encodeURIComponent(csv);a.download="subscribers.csv";a.click();
   }
 
-  const tabs=[["subscribers","📧 Newsletter ("+safeSubs.length+")"],["boxes","📦 Box Orders ("+subOrders.length+")"],["users","👤 Registered Users ("+users.length+")"]];
+  const tabs=[["subscribers","📧 Newsletter ("+newsletters.length+")"],["boxes","📦 Box Orders ("+subOrders.length+")"]];
 
   return(
     <div>
@@ -3989,7 +4030,6 @@ function ASubs({subs}){
         <AH title="Subscribers & Users"/>
         <ABtn onClick={expSubs} style={{background:"#111",color:"#fff",fontSize:10}}>⬇️ Export CSV</ABtn>
       </div>
-      {/* Tabs */}
       <div style={{display:"flex",gap:4,marginBottom:16,borderBottom:"1px solid #e5e7eb",paddingBottom:10}}>
         {tabs.map(([t,l])=>(
           <button key={t} onClick={()=>setTab(t)} style={{padding:"6px 14px",fontSize:11,fontWeight:600,border:`1px solid ${tab===t?"#111":"#e5e7eb"}`,background:tab===t?"#111":"transparent",color:tab===t?"#fff":"#6b7280",borderRadius:4,cursor:"pointer"}}>{l}</button>
@@ -3998,26 +4038,27 @@ function ASubs({subs}){
 
       {loading&&<div style={{textAlign:"center",padding:32,color:"#9ca3af"}}>🔄 Loading...</div>}
 
-      {/* Newsletter Subscribers */}
       {tab==="subscribers"&&!loading&&<>
-        {safeSubs.length===0?<div style={{textAlign:"center",padding:40,color:"#9ca3af"}}>No subscribers yet</div>:(
+        {newsletters.length===0?<div style={{textAlign:"center",padding:40,color:"#9ca3af"}}>No subscribers yet</div>:(
           <div style={{display:"flex",flexDirection:"column",gap:6}}>
-            {safeSubs.map((s,i)=>(
-              <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 14px",background:"#f9fafb",borderRadius:8,border:"1px solid #e5e7eb"}}>
+            {newsletters.map((s,i)=>(
+              <div key={s.id||i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 14px",background:"#f9fafb",borderRadius:8,border:"1px solid #e5e7eb"}}>
                 <span style={{fontSize:13,color:"var(--t-text)"}}>{s.email}</span>
-                <span style={{fontSize:11,color:"#9ca3af"}}>{new Date(s.subscribed_at).toLocaleDateString()}</span>
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  <span style={{fontSize:11,color:"#9ca3af"}}>{s.subscribed_at?new Date(s.subscribed_at).toLocaleDateString():""}</span>
+                  <ABtn sm onClick={()=>delSub(s.id)} style={{background:"#fee2e2",color:"#dc2626"}}>Del</ABtn>
+                </div>
               </div>
             ))}
           </div>
         )}
       </>}
 
-      {/* Mystery Box Orders */}
       {tab==="boxes"&&!loading&&<>
         {subOrders.length===0?<div style={{textAlign:"center",padding:40,color:"#9ca3af"}}>No box orders yet</div>:(
           <div style={{display:"flex",flexDirection:"column",gap:8}}>
             {subOrders.map((o,i)=>(
-              <div key={i} style={{padding:"12px 14px",background:"#f9fafb",borderRadius:8,border:"1px solid #e5e7eb"}}>
+              <div key={o.id||i} style={{padding:"12px 14px",background:"#f9fafb",borderRadius:8,border:"1px solid #e5e7eb"}}>
                 <div style={{display:"flex",justifyContent:"space-between",flexWrap:"wrap",gap:8}}>
                   <div>
                     <div style={{fontWeight:600,fontSize:13,color:"var(--t-text)"}}>{o.name}</div>
@@ -4028,26 +4069,14 @@ function ASubs({subs}){
                       <span style={{fontSize:10,background:o.status==="pending"?"#fee2e2":"#d1fae5",color:o.status==="pending"?"#991b1b":"#065f46",padding:"2px 8px",borderRadius:10,fontWeight:600}}>{o.status}</span>
                     </div>
                   </div>
-                  <div style={{fontSize:10,color:"#9ca3af"}}>{o.created_at?new Date(o.created_at).toLocaleDateString():""}</div>
+                  <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                    {o.status==="pending"&&<ABtn sm onClick={()=>updBoxStatus(o.id,"packed")} style={{background:"#dbeafe",color:"#2563eb"}}>Pack</ABtn>}
+                    {o.status==="packed"&&<ABtn sm onClick={()=>updBoxStatus(o.id,"dispatched")} style={{background:"#dcfce7",color:"#16a34a"}}>Dispatch</ABtn>}
+                    <ABtn sm onClick={()=>delBox(o.id)} style={{background:"#fee2e2",color:"#dc2626"}}>Del</ABtn>
+                    <div style={{fontSize:10,color:"#9ca3af"}}>{o.created_at?new Date(o.created_at).toLocaleDateString():""}</div>
+                  </div>
                 </div>
                 {o.notes&&<div style={{fontSize:11,color:"#6b7280",marginTop:6,padding:"6px 10px",background:"var(--t-card)",borderRadius:4,border:"1px solid #e5e7eb"}}>"{o.notes}"</div>}
-              </div>
-            ))}
-          </div>
-        )}
-      </>}
-
-      {/* Registered Users */}
-      {tab==="users"&&!loading&&<>
-        {users.length===0?<div style={{textAlign:"center",padding:40,color:"#9ca3af"}}>No registered users yet</div>:(
-          <div style={{display:"flex",flexDirection:"column",gap:6}}>
-            {users.map((u,i)=>(
-              <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 14px",background:"#f9fafb",borderRadius:8,border:"1px solid #e5e7eb"}}>
-                <div>
-                  <div style={{fontWeight:600,fontSize:13,color:"var(--t-text)"}}>{u.user_metadata?.full_name||"User"}</div>
-                  <div style={{fontSize:11,color:"#6b7280"}}>{u.email}</div>
-                </div>
-                <div style={{fontSize:11,color:"#9ca3af"}}>{u.created_at?new Date(u.created_at).toLocaleDateString():""}</div>
               </div>
             ))}
           </div>
@@ -4152,7 +4181,6 @@ function ACustomers(){
   async function load(){
     if(!sb)return;
     const{data:vip}=await sb.from("vip_customers").select("*").order("created_at",{ascending:false});
-    const{data:auth}=await sb.from("auth_users_view").select("id,email,created_at").limit(50).catch(()=>({data:[]}));
     setCustomers(vip||[]);
   }
 
@@ -4179,6 +4207,13 @@ function ACustomers(){
     toast(c.vip_unlocked?"VIP removed":"VIP unlocked 👑","success");load();
   }
 
+  async function delCustomer(id){
+    if(!sb||!window.confirm("Delete this customer?"))return;
+    await sb.from("vip_customers").delete().eq("id",id);
+    setCustomers(list=>list.filter(c=>c.id!==id));
+    toast("Customer deleted","success");
+  }
+
   return(<div>
     <AH title="👥 Customer Management" sub="Customers manage karo, bills add karo, VIP unlock karo"/>
     <div style={{display:"flex",gap:8,marginBottom:20}}>
@@ -4198,7 +4233,10 @@ function ACustomers(){
               <td className="adm-td">{c.phone||"—"}</td>
               <td className="adm-td"><span style={{fontWeight:700,color:"#c9a84c"}}>Rs.{Number(c.total_purchase||0).toLocaleString()}</span></td>
               <td className="adm-td"><span style={{padding:"2px 8px",borderRadius:12,fontSize:11,fontWeight:700,background:c.vip_unlocked?"#fef9c3":"#f3f4f6",color:c.vip_unlocked?"#ca8a04":"#6b7280"}}>{c.vip_unlocked?"👑 VIP":"Regular"}</span></td>
-              <td className="adm-td"><button onClick={()=>toggleVip(c)} style={{fontSize:11,padding:"4px 10px",border:"1px solid #e5e7eb",borderRadius:4,cursor:"pointer",background:"#f9fafb"}}>{c.vip_unlocked?"Remove VIP":"Grant VIP"}</button></td>
+              <td className="adm-td"><div style={{display:"flex",gap:4}}>
+                <button onClick={()=>toggleVip(c)} style={{fontSize:11,padding:"4px 10px",border:"1px solid #e5e7eb",borderRadius:4,cursor:"pointer",background:c.vip_unlocked?"#fef9c3":"#f9fafb",color:c.vip_unlocked?"#92400e":"#374151"}}>{c.vip_unlocked?"✓ VIP":"Grant VIP"}</button>
+                <button onClick={()=>delCustomer(c.id)} style={{fontSize:11,padding:"4px 10px",border:"1px solid #fecaca",borderRadius:4,cursor:"pointer",background:"#fee2e2",color:"#dc2626"}}>Del</button>
+              </div></td>
             </tr>
           ))}
           {!customers.length&&<tr><td colSpan={6} style={{textAlign:"center",padding:32,color:"#9ca3af",fontSize:13}}>No customers yet</td></tr>}
@@ -4748,7 +4786,7 @@ function AdminPanel({onExit}){
     sold:()=><ASoldCounter onRefresh={refresh}/>,
     analytics:()=><AAnalytics settings={settings||{}}/>,
     content:()=><AContent settings={settings||{}}/>,
-    subscribers:()=><ASubs subs={subs||[]}/>,
+    subscribers:()=><ASubs/>,
     trend_alerts:()=><ATrendAlerts products={allProds||[]}/>,
     broadcast:()=><AWABroadcast/>,
     customers:()=><ACustomers/>,
