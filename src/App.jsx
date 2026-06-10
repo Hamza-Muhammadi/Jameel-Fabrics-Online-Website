@@ -185,7 +185,7 @@ const G=`
 
 @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Playfair+Display:ital,wght@0,700;0,900;1,400&family=Jost:wght@300;400;500;600;700&display=swap');
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-html{scroll-behavior:smooth}
+html{scroll-behavior:smooth;overflow-x:hidden}
 body{font-family:'Jost',sans-serif;overflow-x:hidden;background:#faf9f7;color:#111}
 img{max-width:100%}
 button{font-family:'Jost',sans-serif}
@@ -853,22 +853,26 @@ function Intro({onEnter,siteTheme,themeName}){
     @keyframes jfSlideR{from{opacity:0;transform:translateX(-25px)}to{opacity:1;transform:translateX(0)}}
     @keyframes jfSlideL{from{opacity:0;transform:translateX(25px)}to{opacity:1;transform:translateX(0)}}
     @keyframes jfTickScroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+    .jf-mob-header{display:none}
     @media(max-width:767px){
-      .jf-intro{display:flex!important;flex-direction:column!important;overflow-y:auto!important;overflow-x:hidden!important}
-      .jf-left{position:relative!important;clip-path:none!important;padding:2.5rem 1.5rem 2rem!important;width:100%!important;inset:auto!important;height:auto!important;min-height:0!important;flex-shrink:0}
-      .jf-left::before{clip-path:none!important}
-      .jf-left-inner{max-width:100%!important}
-      .jf-brand{font-size:clamp(2.6rem,13vw,3.5rem)!important}
-      .jf-sub{max-width:100%!important;font-size:.78rem!important}
-      .jf-stats{gap:1rem!important}
-      .jf-right{position:relative!important;inset:auto!important;padding:2rem 1.5rem 3.5rem!important;display:flex!important;flex-direction:column!important;align-items:center!important;width:100%!important;flex:1}
-      .jf-right-inner{max-width:100%!important;text-align:center!important;width:100%!important}
+      .jf-left{display:none!important}
+      .jf-right{padding:0!important;align-items:center!important;justify-content:flex-start!important;overflow-y:auto!important}
+      .jf-right-inner{max-width:100%!important;width:100%!important;text-align:center!important;padding:0 1.5rem 3rem!important}
       .jf-bg-text{display:none!important}
-      .jf-enter{font-size:clamp(2rem,10vw,3rem)!important;letter-spacing:-1px!important}
-      .jf-store{font-size:clamp(2rem,10vw,3rem)!important;letter-spacing:-1px!important}
+      .jf-mob-header{display:block!important;width:100%;padding:2.5rem 1.5rem 0;text-align:center;margin-bottom:1.5rem}
+      .jf-mob-brand{font-family:'Syne',sans-serif;font-size:clamp(2.4rem,12vw,3.2rem);font-weight:800;line-height:0.9;color:${TH.iEnter};letter-spacing:-1px}
+      .jf-mob-accent{color:transparent;-webkit-text-stroke:2px ${TH.iAccent}}
+      .jf-mob-meta{font-size:0.55rem;letter-spacing:3px;text-transform:uppercase;color:${TH.iEyebrow};margin-top:0.8rem}
+      .jf-mob-stats{display:flex;justify-content:center;gap:1.2rem;margin-top:1rem;padding:1rem 0;border-top:1px solid ${TH.iTag};border-bottom:1px solid ${TH.iTag}}
+      .jf-mob-sitem{text-align:center}
+      .jf-mob-snum{font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:800;color:${TH.iEnter}}
+      .jf-mob-slabel{font-size:0.5rem;letter-spacing:2px;text-transform:uppercase;color:${TH.iEyebrow};margin-top:2px}
+      .jf-eyebrow{margin-bottom:1rem!important;margin-top:1.5rem!important}
+      .jf-enter{font-size:clamp(1.8rem,9vw,2.8rem)!important;letter-spacing:-1px!important}
+      .jf-store{font-size:clamp(1.8rem,9vw,2.8rem)!important;letter-spacing:-1px!important;margin-bottom:1.5rem!important}
       .jf-btn{padding:.9rem 2rem!important}
-      .jf-tags{position:static!important;width:100%!important;padding:1.5rem 0 0!important;display:flex!important;flex-wrap:wrap!important;justify-content:center!important}
-      .jf-eyebrow{margin-bottom:1.2rem!important}
+      .jf-tags{position:static!important;width:100%!important;padding:1rem 0 0!important;display:flex!important;flex-wrap:wrap!important;justify-content:center!important}
+      .jf-divider{margin:1rem auto!important}
     }
   `;
 
@@ -894,6 +898,16 @@ function Intro({onEnter,siteTheme,themeName}){
       {/* RIGHT */}
       <div className="jf-right">
         <div className="jf-bg-text">JF</div>
+        {/* Mobile-only brand header (left panel is hidden on mobile) */}
+        <div className="jf-mob-header">
+          <div className="jf-mob-brand">JAMEEL<br/><span className="jf-mob-accent">FABRICS</span></div>
+          <div className="jf-mob-meta">Est. 1975 · Kunjah, Punjab</div>
+          <div className="jf-mob-stats">
+            <div className="jf-mob-sitem"><div className="jf-mob-snum">50+</div><div className="jf-mob-slabel">Yrs Trust</div></div>
+            <div className="jf-mob-sitem"><div className="jf-mob-snum">500+</div><div className="jf-mob-slabel">Products</div></div>
+            <div className="jf-mob-sitem"><div className="jf-mob-snum">PK</div><div className="jf-mob-slabel">Delivery</div></div>
+          </div>
+        </div>
         <div className="jf-right-inner">
           <div className="jf-eyebrow">Shop the full collection</div>
           <div className="jf-enter">Enter</div>
