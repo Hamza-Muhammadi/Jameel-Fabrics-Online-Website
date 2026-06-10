@@ -233,12 +233,26 @@ button{font-family:'Jost',sans-serif}
   .hide-mob{display:none!important;}
   .search-bar{max-width:140px!important;}
   .stat-grid{grid-template-columns:1fr 1fr!important;}
+  .adm-sb{position:fixed;z-index:200;transform:translateX(-100%);transition:transform .3s}
+  .adm-sb.mob-open{transform:translateX(0)}
+}
+@media(max-width:640px){
+  body{overflow-x:hidden!important;}
+  *{max-width:100vw;box-sizing:border-box;}
+  section,div[style*="padding"]{padding-left:12px!important;padding-right:12px!important;}
+  .mystery-grid{grid-template-columns:1fr!important;border-radius:12px!important;}
+  .cat-bar-inner{justify-content:flex-start!important;padding:0 4px!important;}
+  .hero-grid{padding:60px 16px 40px!important;}
+  h1,h2,h3{word-break:break-word;}
+  button,a{min-height:44px;display:inline-flex;align-items:center;justify-content:center;}
+  input,select,textarea{font-size:16px!important;}
 }
 @media(max-width:480px){
   .four-col{grid-template-columns:1fr!important;}
   .footer-grid{grid-template-columns:1fr!important;}
   .hero-text h1{font-size:clamp(38px,12vw,60px)!important;}
   .stat-grid{grid-template-columns:1fr 1fr!important;}
+  .prod-card-grid{grid-template-columns:1fr 1fr!important;}
 }
 
 
@@ -250,8 +264,6 @@ input[type=range].price-slider::-webkit-slider-thumb{-webkit-appearance:none;wid
 /* AI suggester */
 .ai-typing::after{content:"▌";animation:blink .7s infinite;}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
-.jf-cursor{position:fixed;width:40px;height:40px;pointer-events:none;z-index:9999;transform:translate(-50%,-50%);transition:opacity .3s;}
-.jf-cursor-dot{position:fixed;width:6px;height:6px;background:#c9a84c;border-radius:50%;pointer-events:none;z-index:9999;transform:translate(-50%,-50%);box-shadow:0 0 0 2px rgba(201,168,76,.3);}
 .feel-badge{display:inline-block;font-size:10px;font-weight:600;letter-spacing:.5px;padding:2px 8px;border-radius:20px;border:1px solid #d8ce9a;background:#fffdf5;color:#7a6838;line-height:1.4;text-transform:capitalize;}
 .fs-bar{position:relative;width:100%;background:#f5f0e8;height:28px;overflow:hidden;font-size:11px;font-weight:600;color:#5a4a30;display:flex;align-items:center;padding:0 14px;}
 .fs-prog{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(90deg,#c9a84c,#e8c96a);transition:width .6s cubic-bezier(.4,0,.2,1);z-index:0;}
@@ -1462,7 +1474,7 @@ function MysteryGiftSection({settings,user,onAuth,products}){
   }
 
   return(
-    <section style={{padding:"clamp(48px,6vw,80px) clamp(16px,4vw,60px)",background:"linear-gradient(180deg,#faf9f7 0%,#f5f0e8 100%)"}}>
+    <section id="mystery-section" style={{padding:"clamp(48px,6vw,80px) clamp(16px,4vw,60px)",background:"linear-gradient(180deg,#faf9f7 0%,#f5f0e8 100%)"}}>
       <div style={{textAlign:"center",marginBottom:"clamp(32px,5vw,56px)"}}>
         <div style={{fontSize:10,letterSpacing:5,color:"#c9a84c",textTransform:"uppercase",marginBottom:8}}>All Collection</div>
         <h2 style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"clamp(28px,4vw,44px)",fontWeight:600,color:"#1a1612",lineHeight:1.2}}>Mystery Box & Gift Sender</h2>
@@ -1471,7 +1483,39 @@ function MysteryGiftSection({settings,user,onAuth,products}){
 
       <div className="mystery-grid" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:0,maxWidth:960,margin:"0 auto",borderRadius:16,overflow:"hidden",boxShadow:"0 8px 40px rgba(0,0,0,.08)",border:"1px solid rgba(201,168,76,.12)"}}>
 
-        {/* ── LEFT: Mystery Box ──────────────────────── */}
+        {/* ── LEFT: Gift Sender ──────────────────────── */}
+        <div style={{background:"#fdfcf8",padding:"clamp(28px,4vw,44px)",position:"relative",borderRight:"1px solid rgba(201,168,76,.1)"}}>
+          <div style={{position:"absolute",top:14,right:14,background:"#f5f0e8",color:"#c9a84c",fontSize:8,fontWeight:800,letterSpacing:2,padding:"3px 10px",textTransform:"uppercase",border:"1px solid rgba(201,168,76,.2)"}}>Gift</div>
+
+          <div style={{fontSize:"clamp(2.5rem,5vw,3.5rem)",marginBottom:10}}>💝</div>
+          <h3 style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"clamp(20px,3vw,30px)",fontWeight:600,color:"#1a1612",lineHeight:1.2,marginBottom:10}}>Gift a Suit<br/>to Someone Special</h3>
+          <p style={{fontSize:12,color:"#9a8f83",lineHeight:1.7,marginBottom:20}}>Select a fabric, add gift extras, and we'll deliver it beautifully wrapped with your personal message.</p>
+
+          <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:20}}>
+            {[["🎁","Gift Box","+ Rs. 200",200],["🎀","Wrapping Sheet","+ Rs. 100",100],["💌","Greeting Card","+ Rs. 50",50]].map(([icon,name,price,val])=>(
+              <label key={name} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 12px",border:`1px solid ${giftForm.extras.includes(name.toLowerCase().split(" ")[0])?"#c9a84c":"#e0d8cc"}`,borderRadius:6,cursor:"pointer",background:giftForm.extras.includes(name.toLowerCase().split(" ")[0])?"rgba(201,168,76,.04)":"transparent",transition:"all .15s"}}>
+                <input type="checkbox" checked={giftForm.extras.includes(name.toLowerCase().split(" ")[0])} onChange={e=>{const k=name.toLowerCase().split(" ")[0];setGiftForm(f=>({...f,extras:e.target.checked?[...f.extras,k]:f.extras.filter(x=>x!==k)}));}} style={{accentColor:"#c9a84c",width:15,height:15}}/>
+                <span style={{fontSize:16}}>{icon}</span>
+                <span style={{flex:1,fontSize:12,fontWeight:500,color:"#1a1612"}}>{name}</span>
+                <span style={{fontSize:11,color:"#c9a84c",fontWeight:700}}>{price}</span>
+              </label>
+            ))}
+          </div>
+
+          <div style={{marginBottom:16}}>
+            <div style={{fontSize:11,color:"#9a8f83",marginBottom:4}}>Gift Extra Total</div>
+            <div style={{fontSize:20,fontWeight:800,color:"#c9a84c",fontFamily:"'Cormorant Garamond',serif"}}>Rs. {giftExtra.toLocaleString()}</div>
+            <div style={{fontSize:10,color:"#b5aba2"}}>+ product price</div>
+          </div>
+
+          <button onClick={()=>user?setGiftOpen(true):onAuth("login")} style={{width:"100%",background:"#1a1612",color:"#c9a84c",border:"none",padding:"12px",fontSize:11,fontWeight:800,letterSpacing:2,textTransform:"uppercase",cursor:"pointer",borderRadius:4,transition:"all .2s"}}
+            onMouseEnter={e=>{e.currentTarget.style.background="#c9a84c";e.currentTarget.style.color="#000";}}
+            onMouseLeave={e=>{e.currentTarget.style.background="#1a1612";e.currentTarget.style.color="#c9a84c";}}>
+            Send a Gift →
+          </button>
+        </div>
+
+        {/* ── RIGHT: Mystery Box ─────────────────────── */}
         <div style={{background:"linear-gradient(160deg,#1a1612 0%,#2c1f0a 100%)",padding:"clamp(28px,4vw,44px)",position:"relative",overflow:"hidden"}}>
           <div style={{position:"absolute",inset:0,backgroundImage:"radial-gradient(circle,rgba(201,168,76,.12) 1px,transparent 1px)",backgroundSize:"22px 22px",opacity:.5,pointerEvents:"none"}}/>
           <div style={{position:"absolute",top:14,right:14,background:"#c9a84c",color:"#000",fontSize:8,fontWeight:800,letterSpacing:2,padding:"3px 10px",textTransform:"uppercase"}}>Mystery</div>
@@ -1508,38 +1552,6 @@ function MysteryGiftSection({settings,user,onAuth,products}){
           </div>
         </div>
 
-        {/* ── RIGHT: Gift Sender ─────────────────────── */}
-        <div style={{background:"#fdfcf8",padding:"clamp(28px,4vw,44px)",position:"relative",borderLeft:"1px solid rgba(201,168,76,.1)"}}>
-          <div style={{position:"absolute",top:14,right:14,background:"#f5f0e8",color:"#c9a84c",fontSize:8,fontWeight:800,letterSpacing:2,padding:"3px 10px",textTransform:"uppercase",border:"1px solid rgba(201,168,76,.2)"}}>Gift</div>
-
-          <div style={{fontSize:"clamp(2.5rem,5vw,3.5rem)",marginBottom:10}}>💝</div>
-          <h3 style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"clamp(20px,3vw,30px)",fontWeight:600,color:"#1a1612",lineHeight:1.2,marginBottom:10}}>Gift a Suit<br/>to Someone Special</h3>
-          <p style={{fontSize:12,color:"#9a8f83",lineHeight:1.7,marginBottom:20}}>Select a fabric, add gift extras, and we'll deliver it beautifully wrapped with your personal message.</p>
-
-          {/* What's included */}
-          <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:20}}>
-            {[["🎁","Gift Box","+ Rs. 200",200],["🎀","Wrapping Sheet","+ Rs. 100",100],["💌","Greeting Card","+ Rs. 50",50]].map(([icon,name,price,val])=>(
-              <label key={name} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 12px",border:`1px solid ${giftForm.extras.includes(name.toLowerCase().split(" ")[0])?"#c9a84c":"#e0d8cc"}`,borderRadius:6,cursor:"pointer",background:giftForm.extras.includes(name.toLowerCase().split(" ")[0])?"rgba(201,168,76,.04)":"transparent",transition:"all .15s"}}>
-                <input type="checkbox" checked={giftForm.extras.includes(name.toLowerCase().split(" ")[0])} onChange={e=>{const k=name.toLowerCase().split(" ")[0];setGiftForm(f=>({...f,extras:e.target.checked?[...f.extras,k]:f.extras.filter(x=>x!==k)}));}} style={{accentColor:"#c9a84c",width:15,height:15}}/>
-                <span style={{fontSize:16}}>{icon}</span>
-                <span style={{flex:1,fontSize:12,fontWeight:500,color:"#1a1612"}}>{name}</span>
-                <span style={{fontSize:11,color:"#c9a84c",fontWeight:700}}>{price}</span>
-              </label>
-            ))}
-          </div>
-
-          <div style={{marginBottom:16}}>
-            <div style={{fontSize:11,color:"#9a8f83",marginBottom:4}}>Gift Extra Total</div>
-            <div style={{fontSize:20,fontWeight:800,color:"#c9a84c",fontFamily:"'Cormorant Garamond',serif"}}>Rs. {giftExtra.toLocaleString()}</div>
-            <div style={{fontSize:10,color:"#b5aba2"}}>+ product price</div>
-          </div>
-
-          <button onClick={()=>user?setGiftOpen(true):onAuth("login")} style={{width:"100%",background:"#1a1612",color:"#c9a84c",border:"none",padding:"12px",fontSize:11,fontWeight:800,letterSpacing:2,textTransform:"uppercase",cursor:"pointer",borderRadius:4,transition:"all .2s"}}
-            onMouseEnter={e=>{e.currentTarget.style.background="#c9a84c";e.currentTarget.style.color="#000";}}
-            onMouseLeave={e=>{e.currentTarget.style.background="#1a1612";e.currentTarget.style.color="#c9a84c";}}>
-            Send a Gift →
-          </button>
-        </div>
       </div>
 
       {/* ── Subscribe Modal ──────────────────────────── */}
@@ -1947,6 +1959,8 @@ function Store({user,onLogout,onAccount,onAdmin,siteTheme,themeName}){
             <div style={{fontSize:9,fontWeight:700,letterSpacing:2,textTransform:"uppercase",color:"var(--t-muted)",padding:"12px 16px 4px",marginTop:4}}>Info</div>
             {[
               {label:"Visit Our Store",icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>,fn:()=>{setMenuOpen(false);document.getElementById("store-map")?.scrollIntoView({behavior:"smooth"});}},
+              {label:"Mystery Box",icon:<span style={{fontSize:16}}>🎁</span>,fn:()=>{setMenuOpen(false);document.getElementById("mystery-section")?.scrollIntoView({behavior:"smooth"});}},
+              {label:"Gift Sender",icon:<span style={{fontSize:16}}>💝</span>,fn:()=>{setMenuOpen(false);document.getElementById("mystery-section")?.scrollIntoView({behavior:"smooth"});}},
               {label:"Our Policies",icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>,fn:()=>{setMenuOpen(false);document.getElementById("policies")?.scrollIntoView({behavior:"smooth"});}},
               {label:"WhatsApp Us",icon:<svg width="18" height="18" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347zM12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.126 1.532 5.862L0 24l6.291-1.507A11.945 11.945 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.93 0-3.74-.516-5.29-1.41l-.38-.225-3.738.894.952-3.62-.248-.394A9.954 9.954 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z" fill="#25D366"/></svg>,fn:()=>{const msg=settings?.wa_greeting||"Assalam! I am interested in your fabrics.";window.open("https://wa.me/"+wa+"?text="+encodeURIComponent(msg),"_blank");setMenuOpen(false);}},
             ].map(({label,icon,fn})=>(
@@ -2034,10 +2048,11 @@ function Store({user,onLogout,onAccount,onAdmin,siteTheme,themeName}){
       <div onClick={adminTrigger} onTouchEnd={adminTrigger} style={{position:"absolute",bottom:0,left:0,width:50,height:50,opacity:0,cursor:"default",zIndex:10}}/>
     </section>
     {/* CATEGORY BAR */}
-    <div style={{background:"var(--t-card)",borderTop:"1px solid #e8e4df",borderBottom:"1px solid #e8e4df",position:"sticky",top:64,zIndex:99,overflowX:"auto"}}>
-      <div style={{display:"flex",justifyContent:"center",minWidth:"max-content",margin:"0 auto"}}>
+    <div style={{background:"var(--t-card)",borderTop:"1px solid var(--t-border)",borderBottom:"1px solid var(--t-border)",position:"sticky",top:0,zIndex:99,overflowX:"auto",WebkitOverflowScrolling:"touch",scrollbarWidth:"none",msOverflowStyle:"none"}}>
+      <div className="cat-bar-inner" style={{display:"flex",justifyContent:"center",minWidth:"max-content",margin:"0 auto",padding:"0 clamp(8px,2vw,24px)"}}>
         {CATS.map(([c,lbl])=>(
-          <button key={c} onClick={()=>{setCat(c);document.getElementById("prods")?.scrollIntoView({behavior:"smooth"});}} style={{padding:"14px clamp(14px,2.5vw,28px)",border:"none",background:"none",cursor:"pointer",fontFamily:"inherit",fontSize:10,fontWeight:600,letterSpacing:2,textTransform:"uppercase",color:cat===c?TH.text:TH.muted,borderBottom:cat===c?`2px solid ${TH.text}`:"2px solid transparent",transition:"all .25s",whiteSpace:"nowrap",flexShrink:0}}>
+          <button key={c} onClick={()=>{setCat(c);document.getElementById("prods")?.scrollIntoView({behavior:"smooth"});}}
+            style={{padding:"13px clamp(10px,2vw,22px)",border:"none",background:"none",cursor:"pointer",fontFamily:"inherit",fontSize:9,fontWeight:700,letterSpacing:1.5,textTransform:"uppercase",color:cat===c?TH.accent:TH.muted,borderBottom:cat===c?`2px solid ${TH.accent}`:"2px solid transparent",transition:"all .2s",whiteSpace:"nowrap",flexShrink:0,position:"relative"}}>
             {lbl}
           </button>
         ))}
@@ -2164,9 +2179,13 @@ function Store({user,onLogout,onAccount,onAdmin,siteTheme,themeName}){
       <ReviewsSection/>
     </section>
 
-    <section style={{padding:"clamp(48px,6vw,80px) clamp(16px,4vw,60px)",background:`${TH.surface}`}}>
-      <div style={{maxWidth:960,margin:"0 auto"}}>
-        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(280px,1fr))",gap:24,alignItems:"start"}}>
+    <section style={{padding:"clamp(48px,6vw,80px) clamp(16px,4vw,60px)",background:`${TH.surface}`,borderBottom:"1px solid var(--t-border)"}}>
+      <div style={{maxWidth:1100,margin:"0 auto"}}>
+        <div style={{textAlign:"center",marginBottom:40}}>
+          <div style={{fontSize:9,letterSpacing:4,color:"var(--t-accent)",textTransform:"uppercase",fontWeight:700,marginBottom:8}}>Who We Are</div>
+          <div style={{fontFamily:"var(--t-hf,'Playfair Display',serif)",fontSize:"clamp(22px,3vw,36px)",fontWeight:700,color:"var(--t-text)"}}>Our Story & Values</div>
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(320px,1fr))",gap:28,alignItems:"start"}}>
 
           {/* ── Card 1: Our Story (show if story_show !== false) ── */}
           {settings?.story_show!=="false"&&(
@@ -3474,14 +3493,6 @@ function ASettings({settings}){
           <ABtn onClick={async()=>{if(!sb)return;const{data}=await sb.from("products").select("*");const a=document.createElement("a");a.href="data:application/json,"+encodeURIComponent(JSON.stringify(data,null,2));a.download="products_backup_"+Date.now()+".json";a.click();}} style={{background:"#111",color:"#fff",width:"100%",marginBottom:8}}>⬇️ Download Products Backup</ABtn>
           <ABtn onClick={async()=>{if(!sb)return;const{data}=await sb.from("online_orders").select("*");const a=document.createElement("a");a.href="data:application/json,"+encodeURIComponent(JSON.stringify(data,null,2));a.download="orders_backup_"+Date.now()+".json";a.click();}} style={{background:"#374151",color:"#fff",width:"100%"}}>⬇️ Download Orders Backup</ABtn>
         </ACard>
-        <ACard style={{padding:18}}>
-          <div style={{fontSize:14,fontWeight:700,marginBottom:12,color:"var(--t-text)"}}>🔗 Quick Links</div>
-          <div style={{display:"flex",flexDirection:"column",gap:6}}>
-            {[["🎨 Theme","theme"],["🏪 Shop Settings","shop_settings"],["💬 WhatsApp","wa_settings"],["📦 Subscription","sub_settings"],["🚚 Delivery","delivery"],["🧾 Bill Templates","bill_templates"]].map(([l,id])=>(
-              <button key={id} onClick={()=>{const nav=document.querySelector(`[data-nav="${id}"]`);if(nav)nav.click();}} style={{textAlign:"left",padding:"8px 12px",background:"#f9fafb",border:"1px solid #e5e7eb",borderRadius:6,fontSize:12,cursor:"pointer",color:"#374151",transition:"all .15s"}}>{l} →</button>
-            ))}
-          </div>
-        </ACard>
       </div>
     </div>
   </div>);
@@ -4121,7 +4132,6 @@ export default function App(){
   async function logout(){if(sb)await sb.auth.signOut();setUser(null);toast("Logged out");setView("store");}
   return(<ErrorBoundary>
     <style>{G}</style>
-    <CustomCursor/>
     {view==="intro"&&<ErrorBoundary><Intro onEnter={()=>setView("store")} siteTheme={TH} themeName={siteTheme}/></ErrorBoundary>}
     {view==="store"&&<ErrorBoundary><Store user={user} onLogout={logout} onAccount={()=>user?setView("account"):null} onAdmin={()=>setShowAdminLogin(true)} siteTheme={TH} themeName={siteTheme}/></ErrorBoundary>}
     {view==="account"&&user&&<AccountPage user={user} onBack={()=>setView("store")}/>}
