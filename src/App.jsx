@@ -441,26 +441,48 @@ function VoiceSearchBtn({onResult}){
 }
 
 // ══════════════════════════════════════════════════════════════
-// AI OUTFIT SUGGESTER
+// AI OUTFIT SUGGESTER (expanded: gender + event + budget + photo)
 // ══════════════════════════════════════════════════════════════
 function AIOutfitSuggester({prods,onFilter}){
   const[open,setOpen]=useState(false);
   const[q,setQ]=useState("");
   const[ans,setAns]=useState("");
   const[loading,setLoading]=useState(false);
+  const[gender,setGender]=useState("Women");
+  const[event,setEvent]=useState("");
+  const[budget,setBudget]=useState("");
+  const[photo,setPhoto]=useState(null);
+  const[photoPreview,setPhotoPreview]=useState("");
+  const fileRef=useRef(null);
+
+  function handlePhoto(e){
+    const f=e.target.files[0];
+    if(!f)return;
+    setPhoto(f);
+    const rd=new FileReader();
+    rd.onload=ev=>setPhotoPreview(ev.target.result);
+    rd.readAsDataURL(f);
+  }
 
   async function ask(){
-    if(!q.trim())return;
+    const query=q.trim()||event;
+    if(!query)return;
     setLoading(true);setAns("");
     const safeProds=(prods||[]).filter(p=>p&&p.name);
     const prodList=safeProds.length>0?safeProds.slice(0,30).map(p=>`${p.name}|${p.category||""}|Rs.${p.sale_price||p.price||0}|${p.feel||""}|${p.season||""}`).join("\n"):"No products available yet. Suggest general Pakistani fabric types.";
+    const filters=[gender,event,budget].filter(Boolean).join(", ");
+    const prompt=`You are a Pakistani fabric store assistant for Jameel Fabrics Kunjah.\nAvailable products:\n${prodList}\n\nCustomer filters: ${filters||"none"}\nCustomer question: "${query}"\n${photo?"(Customer has uploaded a photo of their outfit/style for reference)":""}\n\nSuggest 2-3 specific products with reasons. Be brief, friendly, in simple English/Urdu mix. Format: Product Name — Why perfect. Max 4 lines.`;
     try{
-      const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:400,messages:[{role:"user",content:`You are a Pakistani fabric store assistant for Jameel Fabrics Kunjah. Available products:\n${prodList}\n\nCustomer asks: "${q}"\n\nSuggest 2-3 specific products from the list above with reasons. Be brief, friendly, in simple English. Format: Product Name — Why it's perfect. Max 3 lines.`}]})});
+      const messages=[{role:"user",content:photo?[{type:"image",source:{type:"base64",media_type:photo.type,data:photoPreview.split(",")[1]}},{type:"text",text:prompt}]:prompt}];
+      const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:400,messages})});
       const d=await r.json();
       setAns(d.content?.[0]?.text||"Could not get suggestions.");
     }catch{setAns("Service unavailable. Please try again.");}
     setLoading(false);
   }
+
+  const EVENTS=["Mehndi","Eid","Nikah","Office","Casual","Wedding Guest","Party","Winter"];
+  const BUDGETS=["Under Rs.2000","Rs.2000–5000","Rs.5000–10000","Rs.10000+"];
 
   return(
     <>
@@ -468,21 +490,62 @@ function AIOutfitSuggester({prods,onFilter}){
         ✨ Style Help
       </button>
       {open&&<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",zIndex:1000,display:"flex",alignItems:"flex-end",justifyContent:"center"}} onClick={()=>setOpen(false)}>
-        <div style={{background:"#fff",borderRadius:"16px 16px 0 0",padding:24,width:"100%",maxWidth:480,maxHeight:"70vh",overflow:"auto"}} onClick={e=>e.stopPropagation()}>
-          <div style={{fontWeight:700,fontSize:16,color:"#1a1612",marginBottom:4}}>✨ AI Outfit Suggester</div>
-          <div style={{fontSize:12,color:"#7a6e65",marginBottom:16}}>Tell me the occasion — I'll suggest the perfect fabric</div>
-          <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:12}}>
-            {["Mehndi ke liye","Eid outfit","Office wear","Wedding guest","Gift for wife"].map(s=>(
-              <button key={s} onClick={()=>setQ(s)} style={{background:"#f5f0e8",border:"1px solid #e0d8cc",borderRadius:20,padding:"5px 12px",fontSize:11,cursor:"pointer",color:"#6b5f52"}}>{s}</button>
-            ))}
+        <div style={{background:"#fff",borderRadius:"16px 16px 0 0",padding:24,width:"100%",maxWidth:500,maxHeight:"85vh",overflow:"auto"}} onClick={e=>e.stopPropagation()}>
+          <div style={{fontWeight:700,fontSize:16,color:"#1a1612",marginBottom:2}}>✨ AI Style Studio</div>
+          <div style={{fontSize:11,color:"#7a6e65",marginBottom:16}}>Get personalized fabric suggestions based on your style</div>
+
+          {/* Gender */}
+          <div style={{marginBottom:12}}>
+            <div style={{fontSize:10,fontWeight:700,letterSpacing:1,color:"#9a8f83",textTransform:"uppercase",marginBottom:6}}>For Whom</div>
+            <div style={{display:"flex",gap:6}}>
+              {["Women","Men","Kids"].map(g=>(
+                <button key={g} onClick={()=>setGender(g)} style={{flex:1,padding:"7px 4px",fontSize:11,fontWeight:600,border:`1.5px solid ${gender===g?"#c9a84c":"#e0d8cc"}`,background:gender===g?"rgba(201,168,76,.08)":"#fff",color:gender===g?"#c9a84c":"#7a6e65",borderRadius:6,cursor:"pointer",transition:"all .15s"}}>{g}</button>
+              ))}
+            </div>
           </div>
-          <div style={{display:"flex",gap:8,marginBottom:16}}>
-            <input value={q} onChange={e=>setQ(e.target.value)} onKeyDown={e=>e.key==="Enter"&&ask()} placeholder="Type your occasion or question..." style={{flex:1,padding:"10px 14px",border:"1px solid #e0d8cc",borderRadius:8,fontSize:13,outline:"none"}}/>
-            <button onClick={ask} disabled={loading} style={{background:"#1a1612",color:"#c9a84c",border:"none",borderRadius:8,padding:"10px 18px",fontSize:13,cursor:"pointer",fontWeight:600}}>{loading?"...":"Ask"}</button>
+
+          {/* Event */}
+          <div style={{marginBottom:12}}>
+            <div style={{fontSize:10,fontWeight:700,letterSpacing:1,color:"#9a8f83",textTransform:"uppercase",marginBottom:6}}>Occasion</div>
+            <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
+              {EVENTS.map(e=>(
+                <button key={e} onClick={()=>setEvent(ev=>ev===e?"":e)} style={{padding:"5px 11px",fontSize:10,fontWeight:600,border:`1.5px solid ${event===e?"#c9a84c":"#e0d8cc"}`,background:event===e?"rgba(201,168,76,.08)":"#fff",color:event===e?"#c9a84c":"#7a6e65",borderRadius:20,cursor:"pointer",transition:"all .15s"}}>{e}</button>
+              ))}
+            </div>
           </div>
+
+          {/* Budget */}
+          <div style={{marginBottom:12}}>
+            <div style={{fontSize:10,fontWeight:700,letterSpacing:1,color:"#9a8f83",textTransform:"uppercase",marginBottom:6}}>Budget</div>
+            <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
+              {BUDGETS.map(b=>(
+                <button key={b} onClick={()=>setBudget(bv=>bv===b?"":b)} style={{padding:"5px 11px",fontSize:10,fontWeight:600,border:`1.5px solid ${budget===b?"#c9a84c":"#e0d8cc"}`,background:budget===b?"rgba(201,168,76,.08)":"#fff",color:budget===b?"#c9a84c":"#7a6e65",borderRadius:20,cursor:"pointer",transition:"all .15s"}}>{b}</button>
+              ))}
+            </div>
+          </div>
+
+          {/* Photo Upload (optional) */}
+          <div style={{marginBottom:12}}>
+            <div style={{fontSize:10,fontWeight:700,letterSpacing:1,color:"#9a8f83",textTransform:"uppercase",marginBottom:6}}>Upload Your Style Photo (Optional)</div>
+            <div style={{display:"flex",alignItems:"center",gap:10}}>
+              <button onClick={()=>fileRef.current?.click()} style={{padding:"7px 14px",fontSize:11,border:"1.5px dashed #e0d8cc",background:"#faf9f7",borderRadius:6,cursor:"pointer",color:"#7a6e65",display:"flex",alignItems:"center",gap:6}}>
+                📷 Choose Photo
+              </button>
+              {photoPreview&&<img src={photoPreview} alt="preview" style={{width:40,height:40,objectFit:"cover",borderRadius:6,border:"1px solid #e0d8cc"}}/>}
+              {photo&&<button onClick={()=>{setPhoto(null);setPhotoPreview("");}} style={{fontSize:10,color:"#e57373",background:"none",border:"none",cursor:"pointer"}}>Remove</button>}
+            </div>
+            <input ref={fileRef} type="file" accept="image/*" onChange={handlePhoto} style={{display:"none"}}/>
+          </div>
+
+          {/* Text input */}
+          <div style={{display:"flex",gap:8,marginBottom:14}}>
+            <input value={q} onChange={e=>setQ(e.target.value)} onKeyDown={e=>e.key==="Enter"&&ask()} placeholder="Describe your occasion or style..." style={{flex:1,padding:"10px 14px",border:"1px solid #e0d8cc",borderRadius:8,fontSize:13,outline:"none"}}/>
+            <button onClick={ask} disabled={loading||(!q.trim()&&!event)} style={{background:"#1a1612",color:"#c9a84c",border:"none",borderRadius:8,padding:"10px 18px",fontSize:13,cursor:"pointer",fontWeight:600,opacity:loading||(!q.trim()&&!event)?.6:1}}>{loading?"...":"Suggest"}</button>
+          </div>
+
           {loading&&<div style={{fontSize:13,color:"#7a6e65"}} className="ai-typing">Finding perfect suggestions</div>}
           {ans&&<div style={{background:"#fdfcf8",border:"1px solid #e0d8cc",borderRadius:8,padding:14,fontSize:13,color:"#4a4035",lineHeight:1.7,whiteSpace:"pre-wrap"}}>{ans}</div>}
-          <button onClick={()=>setOpen(false)} style={{marginTop:16,width:"100%",background:"none",border:"1px solid #e0d8cc",borderRadius:8,padding:"10px",fontSize:13,cursor:"pointer",color:"#7a6e65"}}>Close</button>
+          <button onClick={()=>{setOpen(false);setAns("");setQ("");setEvent("");setBudget("");setPhoto(null);setPhotoPreview("");}} style={{marginTop:14,width:"100%",background:"none",border:"1px solid #e0d8cc",borderRadius:8,padding:"10px",fontSize:13,cursor:"pointer",color:"#7a6e65"}}>Close</button>
         </div>
       </div>}
     </>
@@ -1006,12 +1069,14 @@ function PCardSkeleton(){
 }
 
 
+const TRENDING_CITIES=["Lahore","Karachi","Islamabad","Faisalabad","Multan","Rawalpindi","Gujranwala","Sialkot","Peshawar","Quetta"];
 function PCard({prod,onAdd,onWish,wished,idx,onOpenModal,onPriceDrop}){
   const[hov,setHov]=useState(false);const[added,setAdded]=useState(false);
   const img=prod.img1||prod.photo_url||"";
   const price=Number(prod.sale_price||prod.price||0);
   const old=prod.old_price?Number(prod.old_price):null;
   const lowStock=prod.display_stock_text&&(prod.display_stock_text.includes("2")||prod.display_stock_text.includes("3")||prod.display_stock_text.toLowerCase().includes("last")||prod.display_stock_text.toLowerCase().includes("sirf"));
+  const trendCity=prod.trending?TRENDING_CITIES[prod.id?prod.id.charCodeAt(0)%TRENDING_CITIES.length:idx%TRENDING_CITIES.length]:null;
   function handleAdd(e){e.stopPropagation();onAdd(prod);setAdded(true);setTimeout(()=>setAdded(false),1200);}
   function handleShare(e){e.stopPropagation();const txt="Yeh product dekho: *"+prod.name+"*\nRs."+price.toLocaleString()+"\n\nJameel Fabrics Kunjah\njameel-fabrics-catalogue.vercel.app";window.open("https://wa.me/?text="+encodeURIComponent(txt),"_blank");}
   return(
@@ -1025,6 +1090,7 @@ function PCard({prod,onAdd,onWish,wished,idx,onOpenModal,onPriceDrop}){
           <button onClick={handleAdd} style={{background:"transparent",color:"rgba(255,255,255,.85)",border:"1px solid rgba(255,255,255,.4)",padding:"6px 22px",fontSize:9,fontWeight:600,letterSpacing:1.5,cursor:"pointer",fontFamily:"inherit",textTransform:"uppercase",transform:hov?"translateY(0)":"translateY(16px)",transition:"transform .35s .05s"}}>ADD TO CART</button>
         </div>
         {prod.badge&&<div style={{position:"absolute",top:12,left:12,background:prod.badge==="SALE"?"#b91c1c":"#111",color:"#fff",padding:"3px 10px",fontSize:7,fontWeight:800,letterSpacing:2,textTransform:"uppercase",zIndex:2}}>{prod.badge}</div>}
+        {trendCity&&<div style={{position:"absolute",top:prod.badge?38:12,left:12,background:"linear-gradient(135deg,#f59e0b,#d97706)",color:"#fff",padding:"3px 8px",fontSize:7,fontWeight:800,letterSpacing:1,textTransform:"uppercase",zIndex:2,borderRadius:3,display:"flex",alignItems:"center",gap:3}}>🔥 Trending in {trendCity}</div>}
         <button onClick={e=>{e.stopPropagation();onWish(prod.id);}} style={{position:"absolute",top:12,right:12,zIndex:2,width:34,height:34,borderRadius:"50%",background:"rgba(250,249,247,.92)",border:"1px solid #d0ccc5",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",opacity:hov?1:0,transform:hov?"scale(1)":"scale(.6)",transition:"all .3s"}}>
           <svg width="14" height="14" viewBox="0 0 24 24" stroke={wished?"#b91c1c":"#9a8f83"} strokeWidth="1.5" fill={wished?"#b91c1c":"none"}><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
         </button>
@@ -1070,7 +1136,21 @@ function ProductModal({prod,onClose,onAdd,onWish,wished}){
   const[imgIdx,setImgIdx]=useState(0);
   const[selSize,setSelSize]=useState("");
   const[added,setAdded]=useState(false);
+  const[alertEmail,setAlertEmail]=useState("");
+  const[alertDone,setAlertDone]=useState(false);
+  const[copied,setCopied]=useState(false);
   const autoRef=useRef(null);
+  const isOutOfStock=prod&&(prod.real_stock===0||(prod.real_stock===undefined&&prod.stock===0));
+
+  async function subscribeAlert(){
+    if(!alertEmail.trim())return;
+    if(sb)await sb.from("stock_alerts").insert({product_id:prod.id,product_name:prod.name,email:alertEmail,created_at:new Date().toISOString()}).catch(()=>{});
+    setAlertDone(true);
+  }
+  function copyLink(){
+    const url=window.location.origin+"?product="+prod.id;
+    navigator.clipboard.writeText(url).then(()=>{setCopied(true);setTimeout(()=>setCopied(false),2000);}).catch(()=>{});
+  }
 
   const images=[];
   for(let i=1;i<=5;i++){const v=prod["img"+i]||prod["photo_url"+(i===1?"":i)]||"";if(v)images.push(v);}
@@ -1171,25 +1251,45 @@ function ProductModal({prod,onClose,onAdd,onWish,wished}){
           {/* Description */}
           {prod.note&&<div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:14,color:"#7a6e65",lineHeight:1.9,fontStyle:"italic",marginBottom:18}}>{prod.note}</div>}
 
-          {/* Buttons */}
-          <div style={{display:"flex",gap:8,marginBottom:10}}>
-            <button onClick={handleAdd} style={{flex:1,background:added?"#16a34a":"#111",color:"#fff",border:"none",padding:14,fontSize:10,fontWeight:700,letterSpacing:2.5,textTransform:"uppercase",cursor:"pointer",fontFamily:"inherit",transition:"background .25s"}} onMouseEnter={e=>!added&&(e.currentTarget.style.background="#2a2520")} onMouseLeave={e=>!added&&(e.currentTarget.style.background="#111")}>{added?"✓ Added!":"Add to Cart"}</button>
-            <button onClick={()=>onWish(prod.id)} style={{width:48,border:"1px solid "+(wished?"#b91c1c":"#d0ccc5"),background:"#fff",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",transition:"all .2s"}}>
-              <svg width="16" height="16" viewBox="0 0 24 24" stroke={wished?"#b91c1c":"#9a8f83"} strokeWidth="1.5" fill={wished?"#b91c1c":"none"}><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-            </button>
-          </div>
+          {/* Out of Stock Alert */}
+          {isOutOfStock?(
+            <div style={{marginBottom:14,background:"#fef2f2",border:"1px solid #fecaca",borderRadius:8,padding:14}}>
+              <div style={{fontSize:12,fontWeight:700,color:"#b91c1c",marginBottom:10}}>⚠️ Out of Stock — Alert Me When Available</div>
+              {alertDone?(
+                <div style={{fontSize:12,color:"#16a34a",fontWeight:600}}>✓ We'll notify you when it's back!</div>
+              ):(
+                <div style={{display:"flex",gap:6}}>
+                  <input value={alertEmail} onChange={e=>setAlertEmail(e.target.value)} placeholder="Your email address" style={{flex:1,padding:"8px 10px",border:"1px solid #fca5a5",borderRadius:6,fontSize:12,outline:"none"}}/>
+                  <button onClick={subscribeAlert} style={{background:"#b91c1c",color:"#fff",border:"none",padding:"8px 14px",borderRadius:6,fontSize:11,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"}}>Alert Me</button>
+                </div>
+              )}
+              <div style={{fontSize:10,color:"#7a6e65",marginTop:6}}>Also get notified if a discount becomes available.</div>
+            </div>
+          ):(
+            <div style={{display:"flex",gap:8,marginBottom:10}}>
+              <button onClick={handleAdd} style={{flex:1,background:added?"#16a34a":"#111",color:"#fff",border:"none",padding:14,fontSize:10,fontWeight:700,letterSpacing:2.5,textTransform:"uppercase",cursor:"pointer",fontFamily:"inherit",transition:"background .25s"}} onMouseEnter={e=>!added&&(e.currentTarget.style.background="#2a2520")} onMouseLeave={e=>!added&&(e.currentTarget.style.background="#111")}>{added?"✓ Added!":"Add to Cart"}</button>
+              <button onClick={()=>onWish(prod.id)} style={{width:48,border:"1px solid "+(wished?"#b91c1c":"#d0ccc5"),background:"#fff",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",transition:"all .2s"}}>
+                <svg width="16" height="16" viewBox="0 0 24 24" stroke={wished?"#b91c1c":"#9a8f83"} strokeWidth="1.5" fill={wished?"#b91c1c":"none"}><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+              </button>
+            </div>
+          )}
           {/* WA Order */}
           <button onClick={()=>{onAdd(prod);onClose();}} style={{width:"100%",background:"#25D366",color:"#fff",border:"none",padding:13,fontSize:10,fontWeight:700,letterSpacing:2,textTransform:"uppercase",cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:10,marginBottom:14,transition:"background .2s"}} onMouseEnter={e=>e.currentTarget.style.background="#1ea855"} onMouseLeave={e=>e.currentTarget.style.background="#25D366"}>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413z"/></svg>
             Add to Cart & Order
           </button>
           {/* Share */}
-          <div style={{display:"flex",alignItems:"center",gap:10,paddingTop:12,borderTop:"1px solid #e8e4df"}}>
-            <span style={{fontSize:10,color:"#7a6e65",letterSpacing:1,flex:1}}>Share this product:</span>
-            <button onClick={shareWA} style={{background:"#25D366",color:"#fff",border:"none",padding:"7px 14px",fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit",borderRadius:4,display:"flex",alignItems:"center",gap:5}}>
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413z"/></svg>
-              Share on WhatsApp
-            </button>
+          <div style={{paddingTop:12,borderTop:"1px solid #e8e4df"}}>
+            <div style={{fontSize:10,color:"#7a6e65",letterSpacing:1,marginBottom:8}}>Share this product:</div>
+            <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+              <button onClick={shareWA} style={{background:"#25D366",color:"#fff",border:"none",padding:"7px 14px",fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit",borderRadius:4,display:"flex",alignItems:"center",gap:5}}>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413z"/></svg>
+                WhatsApp
+              </button>
+              <button onClick={copyLink} style={{background:copied?"#16a34a":"#f5f0e8",color:copied?"#fff":"#4a4035",border:"1px solid #e0d8cc",padding:"7px 14px",fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit",borderRadius:4,transition:"all .2s"}}>
+                {copied?"✓ Copied!":"🔗 Copy Link"}
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -2331,7 +2431,13 @@ function AccountPage({user,onBack}){
         }
       </div>
       <div style={C}>
-        <div style={{fontSize:15,fontWeight:600,marginBottom:16}}>Wishlist ({wl.length})</div>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16,flexWrap:"wrap",gap:8}}>
+          <div style={{fontSize:15,fontWeight:600}}>Wishlist ({wl.length})</div>
+          {wl.length>0&&<button onClick={()=>{const names=wl.map(w=>w.products?.name).filter(Boolean).join(", ");const txt="Meri Jameel Fabrics Wishlist:\n"+names+"\n\nJameel Fabrics Kunjah — "+window.location.origin;navigator.clipboard?.writeText(txt);window.open("https://wa.me/?text="+encodeURIComponent(txt),"_blank");}} style={{background:"#25D366",color:"#fff",border:"none",padding:"7px 14px",fontSize:11,fontWeight:700,cursor:"pointer",borderRadius:4,display:"flex",alignItems:"center",gap:6}}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="white"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8M16 6l-4-4-4 4M12 2v13"/></svg>
+            Share Wishlist
+          </button>}
+        </div>
         {!wl.length?<div style={{textAlign:"center",padding:32,color:"#8a7f76"}}><div style={{fontFamily:"var(--t-hf,'Playfair Display',serif)",fontSize:16}}>No saved items</div></div>:
           <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(160px,1fr))",gap:14}}>
             {wl.map(w=><div key={w.id} style={{border:"1px solid var(--t-border)",overflow:"hidden"}}>
