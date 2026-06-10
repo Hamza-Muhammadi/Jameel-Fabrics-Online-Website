@@ -853,25 +853,25 @@ function Intro({onEnter,siteTheme,themeName}){
     @keyframes jfSlideR{from{opacity:0;transform:translateX(-25px)}to{opacity:1;transform:translateX(0)}}
     @keyframes jfSlideL{from{opacity:0;transform:translateX(25px)}to{opacity:1;transform:translateX(0)}}
     @keyframes jfTickScroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
-    .jf-mob-header{display:none}
+    .jf-mob-header{display:none!important}
     @media(max-width:767px){
       .jf-left{display:none!important}
-      .jf-right{padding:0!important;align-items:center!important;justify-content:flex-start!important;overflow-y:auto!important}
-      .jf-right-inner{max-width:100%!important;width:100%!important;text-align:center!important;padding:0 1.5rem 3rem!important}
+      .jf-right{padding:0 1.5rem 2.5rem!important;align-items:center!important;justify-content:flex-start!important;overflow-y:auto!important;background:${TH.iBg}!important}
+      .jf-right-inner{max-width:100%!important;width:100%!important;text-align:center!important;padding:0!important;margin:0!important}
       .jf-bg-text{display:none!important}
-      .jf-mob-header{display:block!important;width:100%;padding:2.5rem 1.5rem 0;text-align:center;margin-bottom:1.5rem}
-      .jf-mob-brand{font-family:'Syne',sans-serif;font-size:clamp(2.4rem,12vw,3.2rem);font-weight:800;line-height:0.9;color:${TH.iEnter};letter-spacing:-1px}
-      .jf-mob-accent{color:transparent;-webkit-text-stroke:2px ${TH.iAccent}}
-      .jf-mob-meta{font-size:0.55rem;letter-spacing:3px;text-transform:uppercase;color:${TH.iEyebrow};margin-top:0.8rem}
-      .jf-mob-stats{display:flex;justify-content:center;gap:1.2rem;margin-top:1rem;padding:1rem 0;border-top:1px solid ${TH.iTag};border-bottom:1px solid ${TH.iTag}}
-      .jf-mob-sitem{text-align:center}
-      .jf-mob-snum{font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:800;color:${TH.iEnter}}
-      .jf-mob-slabel{font-size:0.5rem;letter-spacing:2px;text-transform:uppercase;color:${TH.iEyebrow};margin-top:2px}
-      .jf-eyebrow{margin-bottom:1rem!important;margin-top:1.5rem!important}
-      .jf-enter{font-size:clamp(1.8rem,9vw,2.8rem)!important;letter-spacing:-1px!important}
-      .jf-store{font-size:clamp(1.8rem,9vw,2.8rem)!important;letter-spacing:-1px!important;margin-bottom:1.5rem!important}
-      .jf-btn{padding:.9rem 2rem!important}
-      .jf-tags{position:static!important;width:100%!important;padding:1rem 0 0!important;display:flex!important;flex-wrap:wrap!important;justify-content:center!important}
+      .jf-tags{display:none!important}
+      .jf-mob-header{display:flex!important;flex-direction:column!important;align-items:center!important;width:100%!important;padding:2.5rem 0 0!important;margin:0 0 1.2rem!important;text-align:center!important}
+      .jf-mob-brand{font-family:'Syne',sans-serif!important;font-size:clamp(2.4rem,12vw,3.2rem)!important;font-weight:800!important;line-height:0.9!important;color:${TH.iEnter}!important;letter-spacing:-1px!important;margin:0!important;padding:0!important}
+      .jf-mob-accent{color:transparent!important;-webkit-text-stroke:2px ${TH.iAccent}!important}
+      .jf-mob-meta{font-size:0.55rem!important;letter-spacing:3px!important;text-transform:uppercase!important;color:${TH.iEyebrow}!important;margin:0.6rem 0 0!important;padding:0!important}
+      .jf-mob-stats{display:flex!important;justify-content:center!important;gap:1.2rem!important;margin:0.8rem 0 0!important;padding:0.8rem 0!important;border-top:1px solid ${TH.iTag}!important;border-bottom:1px solid ${TH.iTag}!important;width:100%!important}
+      .jf-mob-sitem{text-align:center!important;margin:0!important;padding:0!important}
+      .jf-mob-snum{font-family:'Syne',sans-serif!important;font-size:1.1rem!important;font-weight:800!important;color:${TH.iEnter}!important;margin:0!important;padding:0!important}
+      .jf-mob-slabel{font-size:0.5rem!important;letter-spacing:2px!important;text-transform:uppercase!important;color:${TH.iEyebrow}!important;margin:2px 0 0!important;padding:0!important}
+      .jf-eyebrow{margin:1.5rem 0 0.8rem!important;padding:0!important}
+      .jf-enter{font-size:clamp(1.8rem,9vw,2.8rem)!important;letter-spacing:-1px!important;margin:0!important;padding:0!important}
+      .jf-store{font-size:clamp(1.8rem,9vw,2.8rem)!important;letter-spacing:-1px!important;margin:0 0 1.5rem!important;padding:0!important}
+      .jf-btn{padding:.9rem 2rem!important;margin:0!important}
       .jf-divider{margin:1rem auto!important}
     }
   `;
@@ -2206,9 +2206,9 @@ function Store({user,onLogout,onAccount,onAdmin,siteTheme,themeName}){
     <CountdownBanner settings={settings}/>
     {/* NAV */}
     <nav style={{position:"sticky",top:0,zIndex:100,background:`${TH.card}f5`,backdropFilter:"blur(24px)",borderBottom:`1px solid ${TH.border}`,height:64,display:"flex",alignItems:"center",padding:"0 clamp(14px,3vw,52px)",gap:12,boxShadow:"0 1px 16px rgba(0,0,0,.06)"}}>
-      <button onClick={()=>{setCat("All");window.scrollTo({top:0,behavior:"smooth"});}} style={{cursor:"pointer",flexShrink:0,background:"none",border:"none",textAlign:"left",marginRight:"auto",padding:0}}>
-        <div style={{fontFamily:"var(--t-hf,'Playfair Display',serif)",fontSize:"clamp(13px,1.5vw,17px)",fontWeight:900,letterSpacing:"clamp(2px,1vw,6px)",color:`${TH.text}`,lineHeight:1.1}}>{settings.store_name||"JAMEEL FABRICS"}</div>
-        <div style={{fontSize:7,letterSpacing:"clamp(2px,.8vw,5px)",color:`${TH.accent}`,fontFamily:"'Cormorant Garamond',serif",fontStyle:"italic",lineHeight:1,fontWeight:500}}>KUNJAH · PUNJAB</div>
+      <button onClick={()=>{setCat("All");window.scrollTo({top:0,behavior:"smooth"});}} style={{cursor:"pointer",flexShrink:0,background:"none",border:"none",textAlign:"left",marginRight:"auto",padding:0,maxWidth:"clamp(100px,34vw,240px)",overflow:"hidden"}}>
+        <div style={{fontFamily:"'Jost',sans-serif",fontSize:"clamp(11px,1.1vw,14px)",fontWeight:700,letterSpacing:"clamp(1px,.25vw,2.5px)",color:`${TH.text}`,lineHeight:1,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{settings.store_name||"JAMEEL FABRICS"}</div>
+        <div style={{fontSize:"5.5px",letterSpacing:"1px",color:`${TH.accent}`,fontFamily:"'Cormorant Garamond',serif",fontStyle:"italic",lineHeight:1,fontWeight:500,whiteSpace:"nowrap",marginTop:"2px"}}>KUNJAH · PUNJAB</div>
       </button>
       <div className="search-bar hide-mob" style={{display:"flex",alignItems:"center",gap:8,background:"var(--t-surface)",border:"1px solid var(--t-border)",padding:"7px 14px",flex:1,maxWidth:200}}>
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9a8f83" strokeWidth="1.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
