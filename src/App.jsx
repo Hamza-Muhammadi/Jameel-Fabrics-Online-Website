@@ -436,55 +436,58 @@ function VoiceSearchBtn({onResult}){
     r.start();setListening(true);
   }
   return(
-    <button onClick={start} title="Voice Search" className={listening?"voice-active":""} style={{background:listening?"#ef4444":"#f5f0e8",border:"1px solid #e0d8cc",borderRadius:8,width:38,height:38,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0,transition:"background .2s"}}>
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={listening?"#fff":"#c9a84c"} strokeWidth="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
-    </button>
+    <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:2,flexShrink:0}}>
+      <button onClick={start} title="Bol ke dhundo" className={listening?"voice-active":""} style={{background:listening?"#ef4444":"#f5f0e8",border:"1px solid #e0d8cc",borderRadius:8,width:38,height:38,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",transition:"background .2s"}}>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={listening?"#fff":"#c9a84c"} strokeWidth="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+      </button>
+      <span style={{fontSize:7,color:listening?"#ef4444":"#9a8f83",letterSpacing:.5,whiteSpace:"nowrap"}}>{listening?"Listening...":"🎤 Bol ke"}</span>
+    </div>
   );
 }
 
 // ══════════════════════════════════════════════════════════════
-// AI OUTFIT SUGGESTER (expanded: gender + event + budget + photo)
+// SMART STYLE FINDER (rule-based, no API needed)
 // ══════════════════════════════════════════════════════════════
 function AIOutfitSuggester({prods,onFilter}){
   const[open,setOpen]=useState(false);
-  const[q,setQ]=useState("");
-  const[ans,setAns]=useState("");
-  const[loading,setLoading]=useState(false);
   const[gender,setGender]=useState("Women");
   const[event,setEvent]=useState("");
   const[budget,setBudget]=useState("");
-  const[photo,setPhoto]=useState(null);
-  const[photoPreview,setPhotoPreview]=useState("");
-  const fileRef=useRef(null);
+  const[results,setResults]=useState([]);
+  const[searched,setSearched]=useState(false);
 
-  function handlePhoto(e){
-    const f=e.target.files[0];
-    if(!f)return;
-    setPhoto(f);
-    const rd=new FileReader();
-    rd.onload=ev=>setPhotoPreview(ev.target.result);
-    rd.readAsDataURL(f);
-  }
-
-  async function ask(){
-    const query=q.trim()||event;
-    if(!query)return;
-    setLoading(true);setAns("");
-    const safeProds=(prods||[]).filter(p=>p&&p.name);
-    const prodList=safeProds.length>0?safeProds.slice(0,30).map(p=>`${p.name}|${p.category||""}|Rs.${p.sale_price||p.price||0}|${p.feel||""}|${p.season||""}`).join("\n"):"No products available yet. Suggest general Pakistani fabric types.";
-    const filters=[gender,event,budget].filter(Boolean).join(", ");
-    const prompt=`You are a Pakistani fabric store assistant for Jameel Fabrics Kunjah.\nAvailable products:\n${prodList}\n\nCustomer filters: ${filters||"none"}\nCustomer question: "${query}"\n${photo?"(Customer has uploaded a photo of their outfit/style for reference)":""}\n\nSuggest 2-3 specific products with reasons. Be brief, friendly, in simple English/Urdu mix. Format: Product Name — Why perfect. Max 4 lines.`;
-    try{
-      const messages=[{role:"user",content:photo?[{type:"image",source:{type:"base64",media_type:photo.type,data:photoPreview.split(",")[1]}},{type:"text",text:prompt}]:prompt}];
-      const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:400,messages})});
-      const d=await r.json();
-      setAns(d.content?.[0]?.text||"Could not get suggestions.");
-    }catch{setAns("Service unavailable. Please try again.");}
-    setLoading(false);
-  }
-
-  const EVENTS=["Mehndi","Eid","Nikah","Office","Casual","Wedding Guest","Party","Winter"];
+  const GENDER_CATS={Women:["WU","WS","RS","AB"],Men:["MP","ME"],Kids:["KU"]};
+  const EVENT_FEEL={Mehndi:["Embroidered"],Eid:["Soft","Embroidered"],Nikah:["Embroidered"],"Wedding Guest":["Embroidered","Soft"],Office:["Medium","Soft"],Casual:["Soft","Medium"],Party:["Embroidered"],Winter:["Stiff","Medium"]};
   const BUDGETS=["Under Rs.2000","Rs.2000–5000","Rs.5000–10000","Rs.10000+"];
+  const EVENTS=["Mehndi","Eid","Nikah","Office","Casual","Wedding Guest","Party","Winter"];
+
+  function suggest(){
+    const safe=(prods||[]).filter(p=>p&&p.name&&p.in_stock!==false);
+    const cats=GENDER_CATS[gender]||[];
+    const preferredFeel=EVENT_FEEL[event]||[];
+
+    let filtered=safe.filter(p=>{
+      const catOk=cats.includes(p.cat)||cats.includes(p.category);
+      const price=Number(p.sale_price||p.price||0);
+      const budgetOk=!budget||
+        (budget.includes("Under")&&price<2000)||
+        (budget.includes("2000–5000")&&price>=2000&&price<=5000)||
+        (budget.includes("5000–10000")&&price>5000&&price<=10000)||
+        (budget.includes("10000+")&&price>10000);
+      return catOk&&budgetOk;
+    });
+
+    // Prefer products matching the occasion's fabric feel
+    if(preferredFeel.length>0){
+      const withFeel=filtered.filter(p=>preferredFeel.includes(p.feel));
+      if(withFeel.length>=2)filtered=withFeel;
+    }
+
+    // Shuffle and pick up to 4
+    const picks=filtered.sort(()=>Math.random()-.5).slice(0,4);
+    setResults(picks);
+    setSearched(true);
+  }
 
   return(
     <>
@@ -492,62 +495,76 @@ function AIOutfitSuggester({prods,onFilter}){
         ✨ Style Help
       </button>
       {open&&<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",zIndex:1000,display:"flex",alignItems:"flex-end",justifyContent:"center"}} onClick={()=>setOpen(false)}>
-        <div style={{background:"#fff",borderRadius:"16px 16px 0 0",padding:24,width:"100%",maxWidth:500,maxHeight:"85vh",overflow:"auto"}} onClick={e=>e.stopPropagation()}>
-          <div style={{fontWeight:700,fontSize:16,color:"#1a1612",marginBottom:2}}>✨ AI Style Studio</div>
-          <div style={{fontSize:11,color:"#7a6e65",marginBottom:16}}>Get personalized fabric suggestions based on your style</div>
+        <div style={{background:"#fff",borderRadius:"16px 16px 0 0",padding:24,width:"100%",maxWidth:500,maxHeight:"88vh",overflow:"auto"}} onClick={e=>e.stopPropagation()}>
+          <div style={{fontWeight:700,fontSize:16,color:"#1a1612",marginBottom:2}}>✨ Style Finder</div>
+          <div style={{fontSize:11,color:"#7a6e65",marginBottom:16}}>Apni zaroorat batao — hum matching products dhundhtein hain</div>
 
-          {/* Gender */}
           <div style={{marginBottom:12}}>
-            <div style={{fontSize:10,fontWeight:700,letterSpacing:1,color:"#9a8f83",textTransform:"uppercase",marginBottom:6}}>For Whom</div>
+            <div style={{fontSize:10,fontWeight:700,letterSpacing:1,color:"#9a8f83",textTransform:"uppercase",marginBottom:6}}>Kiske liye?</div>
             <div style={{display:"flex",gap:6}}>
               {["Women","Men","Kids"].map(g=>(
-                <button key={g} onClick={()=>setGender(g)} style={{flex:1,padding:"7px 4px",fontSize:11,fontWeight:600,border:`1.5px solid ${gender===g?"#c9a84c":"#e0d8cc"}`,background:gender===g?"rgba(201,168,76,.08)":"#fff",color:gender===g?"#c9a84c":"#7a6e65",borderRadius:6,cursor:"pointer",transition:"all .15s"}}>{g}</button>
+                <button key={g} onClick={()=>{setGender(g);setSearched(false);}} style={{flex:1,padding:"7px 4px",fontSize:11,fontWeight:600,border:`1.5px solid ${gender===g?"#c9a84c":"#e0d8cc"}`,background:gender===g?"rgba(201,168,76,.08)":"#fff",color:gender===g?"#c9a84c":"#7a6e65",borderRadius:6,cursor:"pointer"}}>{g}</button>
               ))}
             </div>
           </div>
 
-          {/* Event */}
           <div style={{marginBottom:12}}>
-            <div style={{fontSize:10,fontWeight:700,letterSpacing:1,color:"#9a8f83",textTransform:"uppercase",marginBottom:6}}>Occasion</div>
+            <div style={{fontSize:10,fontWeight:700,letterSpacing:1,color:"#9a8f83",textTransform:"uppercase",marginBottom:6}}>Occasion (optional)</div>
             <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
               {EVENTS.map(e=>(
-                <button key={e} onClick={()=>setEvent(ev=>ev===e?"":e)} style={{padding:"5px 11px",fontSize:10,fontWeight:600,border:`1.5px solid ${event===e?"#c9a84c":"#e0d8cc"}`,background:event===e?"rgba(201,168,76,.08)":"#fff",color:event===e?"#c9a84c":"#7a6e65",borderRadius:20,cursor:"pointer",transition:"all .15s"}}>{e}</button>
+                <button key={e} onClick={()=>{setEvent(ev=>ev===e?"":e);setSearched(false);}} style={{padding:"5px 11px",fontSize:10,fontWeight:600,border:`1.5px solid ${event===e?"#c9a84c":"#e0d8cc"}`,background:event===e?"rgba(201,168,76,.08)":"#fff",color:event===e?"#c9a84c":"#7a6e65",borderRadius:20,cursor:"pointer"}}>{e}</button>
               ))}
             </div>
           </div>
 
-          {/* Budget */}
-          <div style={{marginBottom:12}}>
-            <div style={{fontSize:10,fontWeight:700,letterSpacing:1,color:"#9a8f83",textTransform:"uppercase",marginBottom:6}}>Budget</div>
+          <div style={{marginBottom:16}}>
+            <div style={{fontSize:10,fontWeight:700,letterSpacing:1,color:"#9a8f83",textTransform:"uppercase",marginBottom:6}}>Budget (optional)</div>
             <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
               {BUDGETS.map(b=>(
-                <button key={b} onClick={()=>setBudget(bv=>bv===b?"":b)} style={{padding:"5px 11px",fontSize:10,fontWeight:600,border:`1.5px solid ${budget===b?"#c9a84c":"#e0d8cc"}`,background:budget===b?"rgba(201,168,76,.08)":"#fff",color:budget===b?"#c9a84c":"#7a6e65",borderRadius:20,cursor:"pointer",transition:"all .15s"}}>{b}</button>
+                <button key={b} onClick={()=>{setBudget(bv=>bv===b?"":b);setSearched(false);}} style={{padding:"5px 11px",fontSize:10,fontWeight:600,border:`1.5px solid ${budget===b?"#c9a84c":"#e0d8cc"}`,background:budget===b?"rgba(201,168,76,.08)":"#fff",color:budget===b?"#c9a84c":"#7a6e65",borderRadius:20,cursor:"pointer"}}>{b}</button>
               ))}
             </div>
           </div>
 
-          {/* Photo Upload (optional) */}
-          <div style={{marginBottom:12}}>
-            <div style={{fontSize:10,fontWeight:700,letterSpacing:1,color:"#9a8f83",textTransform:"uppercase",marginBottom:6}}>Upload Your Style Photo (Optional)</div>
-            <div style={{display:"flex",alignItems:"center",gap:10}}>
-              <button onClick={()=>fileRef.current?.click()} style={{padding:"7px 14px",fontSize:11,border:"1.5px dashed #e0d8cc",background:"#faf9f7",borderRadius:6,cursor:"pointer",color:"#7a6e65",display:"flex",alignItems:"center",gap:6}}>
-                📷 Choose Photo
-              </button>
-              {photoPreview&&<img src={photoPreview} alt="preview" style={{width:40,height:40,objectFit:"cover",borderRadius:6,border:"1px solid #e0d8cc"}}/>}
-              {photo&&<button onClick={()=>{setPhoto(null);setPhotoPreview("");}} style={{fontSize:10,color:"#e57373",background:"none",border:"none",cursor:"pointer"}}>Remove</button>}
-            </div>
-            <input ref={fileRef} type="file" accept="image/*" onChange={handlePhoto} style={{display:"none"}}/>
-          </div>
+          <button onClick={suggest} style={{width:"100%",background:"#1a1612",color:"#c9a84c",border:"none",borderRadius:8,padding:"12px",fontSize:12,fontWeight:700,cursor:"pointer",letterSpacing:1,marginBottom:14}}>
+            Find Matching Products →
+          </button>
 
-          {/* Text input */}
-          <div style={{display:"flex",gap:8,marginBottom:14}}>
-            <input value={q} onChange={e=>setQ(e.target.value)} onKeyDown={e=>e.key==="Enter"&&ask()} placeholder="Describe your occasion or style..." style={{flex:1,padding:"10px 14px",border:"1px solid #e0d8cc",borderRadius:8,fontSize:13,outline:"none"}}/>
-            <button onClick={ask} disabled={loading||(!q.trim()&&!event)} style={{background:"#1a1612",color:"#c9a84c",border:"none",borderRadius:8,padding:"10px 18px",fontSize:13,cursor:"pointer",fontWeight:600,opacity:loading||(!q.trim()&&!event)?.6:1}}>{loading?"...":"Suggest"}</button>
-          </div>
+          {searched&&(
+            results.length>0?(
+              <>
+                <div style={{fontSize:11,color:"#7a6e65",marginBottom:10}}>✓ {results.length} products mili hain tumhare liye:</div>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:12}}>
+                  {results.map(p=>{
+                    const img=p.img1||p.photo_url||"";
+                    const price=Number(p.sale_price||p.price||0);
+                    return(
+                      <div key={p.id} style={{border:"1px solid #e0d8cc",borderRadius:8,overflow:"hidden",background:"#fdfcf8"}}>
+                        <div style={{aspectRatio:"3/4",background:"#f5f0e8",display:"flex",alignItems:"center",justifyContent:"center",fontSize:36,overflow:"hidden"}}>
+                          {img?<img src={img} alt={p.name} style={{width:"100%",height:"100%",objectFit:"cover"}} onError={e=>e.target.style.display="none"}/>:"👗"}
+                        </div>
+                        <div style={{padding:"8px 10px"}}>
+                          <div style={{fontSize:11,fontWeight:600,color:"#1a1612",lineHeight:1.3,marginBottom:3}}>{p.name}</div>
+                          {p.feel&&<div style={{fontSize:9,color:"#7a6e65",marginBottom:3}}>{p.feel} · {p.season||""}</div>}
+                          <div style={{fontSize:13,fontWeight:700,color:"#c9a84c",fontFamily:"'Cormorant Garamond',serif"}}>Rs.{price.toLocaleString()}</div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                <button onClick={()=>{onFilter&&onFilter(GENDER_CATS[gender]?.[0]||"All");setOpen(false);document.getElementById("prods")?.scrollIntoView({behavior:"smooth"});}} style={{width:"100%",background:"none",border:"1px solid #e0d8cc",borderRadius:8,padding:"10px",fontSize:12,cursor:"pointer",color:"#7a6e65",marginBottom:6}}>
+                  Saari {gender} products dekhein →
+                </button>
+              </>
+            ):(
+              <div style={{textAlign:"center",padding:"20px 0",color:"#7a6e65",fontSize:13}}>
+                Is filter mein koi product nahi mili.<br/>
+                <button onClick={()=>{setBudget("");setEvent("");suggest();}} style={{marginTop:8,background:"none",border:"1px solid #c9a84c",color:"#c9a84c",padding:"6px 14px",borderRadius:6,cursor:"pointer",fontSize:11,fontWeight:600}}>Budget filter hata ke dhundho</button>
+              </div>
+            )
+          )}
 
-          {loading&&<div style={{fontSize:13,color:"#7a6e65"}} className="ai-typing">Finding perfect suggestions</div>}
-          {ans&&<div style={{background:"#fdfcf8",border:"1px solid #e0d8cc",borderRadius:8,padding:14,fontSize:13,color:"#4a4035",lineHeight:1.7,whiteSpace:"pre-wrap"}}>{ans}</div>}
-          <button onClick={()=>{setOpen(false);setAns("");setQ("");setEvent("");setBudget("");setPhoto(null);setPhotoPreview("");}} style={{marginTop:14,width:"100%",background:"none",border:"1px solid #e0d8cc",borderRadius:8,padding:"10px",fontSize:13,cursor:"pointer",color:"#7a6e65"}}>Close</button>
+          <button onClick={()=>{setOpen(false);setResults([]);setSearched(false);setEvent("");setBudget("");}} style={{width:"100%",background:"none",border:"1px solid #e0d8cc",borderRadius:8,padding:"10px",fontSize:13,cursor:"pointer",color:"#7a6e65"}}>Close</button>
         </div>
       </div>}
     </>
@@ -1000,7 +1017,6 @@ function LastSecondAddon({cart,setCart,settings}){
 
 function CartPanel({cart,setCart,wa,onClose,user,settings,gift,setGift}){
   const[code,setCode]=useState("");const[coupon,setCoupon]=useState(null);const[cL,setCL]=useState(false);
-  const[showForm,setShowForm]=useState(false);
   const[custName,setCustName]=useState("");const[custCity,setCustCity]=useState("");const[custAddr,setCustAddr]=useState("");
   const sub=cart.reduce((s,x)=>s+x.price*x.qty,0);
   const disc=coupon?(coupon.type==="percent"?Math.round(sub*coupon.value/100):coupon.value):0;
@@ -1031,18 +1047,21 @@ function CartPanel({cart,setCart,wa,onClose,user,settings,gift,setGift}){
           .replace("{bill_num}",billNum);
         const ftr=(tpl.footer||"Jazakallah! Thank you for shopping 🙏");
         const sep="━━━━━━━━━━━━━━━━";
+        const custLine=(custName||custCity||custAddr)?"\n\n"+sep+"\n👤 *CUSTOMER*\n"+sep+(custName?"\nNaam: "+custName:"")+(custCity?"\nShehar: "+custCity:"")+(custAddr?"\nPata: "+custAddr:""):"";
         msg=hdr+"\n\n"+sep+"\n📋 *ORDER BILL*\n"+sep+"\n🔖 Bill#: "+billNum+"\n📅 Date: "+dateStr+"\n"+sep+"\n\n"+itemLines+"\n\n"+sep;
         if(coupon)msg+="\n🎟️ Coupon: "+coupon.code+" (-Rs."+disc.toLocaleString()+")";
-        msg+="\n💰 *TOTAL: Rs."+total.toLocaleString()+"*\n"+sep+"\n\n"+ftr;
+        msg+="\n💰 *TOTAL: Rs."+total.toLocaleString()+"*\n"+sep+custLine+"\n\n"+ftr;
       }
     }catch{}
     // Fallback to default message if no template
     if(!msg){
-      msg="Assalamualaikum!\n\nI would like to place an order from *JAMEEL FABRICS Kunjah*.\n\n"+"━━━━━━━━━━━━━━━━\n ORDER DETAILS\n━━━━━━━━━━━━━━━━\n\n";
-      msg+=cart.map(p=>{let l="* "+p.name+" *";l+="\n   Category: "+(CAT_L[p.cat]||p.cat||"");if(p.color)l+="\n   Color: "+p.color;l+="\n   Price: Rs."+Number(p.price).toLocaleString()+" x "+p.qty+" = Rs."+(p.price*p.qty).toLocaleString();return l;}).join("\n\n");
-      msg+="\n\n";
-      if(coupon)msg+="Coupon: "+coupon.code+" (-Rs."+disc.toLocaleString()+")\n\n";
-      msg+="━━━━━━━━━━━━━━━━\nTOTAL: *Rs."+total.toLocaleString()+"*\n━━━━━━━━━━━━━━━━\n\nPlease confirm availability and share delivery address.\n\nJazakAllah Khair!";
+      msg="Assalamualaikum!\n\n*JAMEEL FABRICS Kunjah*\n\n"+"━━━━━━━━━━━━━━━━\n📋 ORDER DETAILS\n━━━━━━━━━━━━━━━━\n\n";
+      msg+=cart.map(p=>{let l="• *"+p.name+"*";l+="\n   Category: "+(CAT_L[p.cat]||p.cat||"");if(p.color)l+="\n   Color: "+p.color;l+="\n   Rs."+Number(p.price).toLocaleString()+" × "+p.qty+" = *Rs."+(p.price*p.qty).toLocaleString()+"*";return l;}).join("\n\n");
+      msg+="\n\n━━━━━━━━━━━━━━━━\n";
+      if(coupon)msg+="🎟️ Coupon: "+coupon.code+" (-Rs."+disc.toLocaleString()+")\n";
+      msg+="💰 *TOTAL: Rs."+total.toLocaleString()+"*\n━━━━━━━━━━━━━━━━";
+      if(custName||custCity||custAddr){msg+="\n\n👤 *Delivery*";if(custName)msg+="\nNaam: "+custName;if(custCity)msg+="\nShehar: "+custCity;if(custAddr)msg+="\nPata: "+custAddr;}
+      msg+="\n\nJazakAllah Khair! 🙏";
     }
     window.open("https://wa.me/"+(wa||WA_NUM)+"?text="+encodeURIComponent(msg),"_blank");
     setCart([]);onClose();
@@ -1092,20 +1111,15 @@ function CartPanel({cart,setCart,wa,onClose,user,settings,gift,setGift}){
             <div style={{display:"flex",justifyContent:"space-between",fontSize:17,fontWeight:700,marginTop:10,paddingTop:10,borderTop:"1px solid #e8e4df"}}><span>Total</span><span style={{fontFamily:"'Cormorant Garamond',serif",fontSize:22}}>Rs.{total.toLocaleString()}</span></div>
             <div style={{fontSize:11,color:"#8a7f76",marginTop:5}}>Delivery charges separate (discuss on WhatsApp)</div>
           </div>
-          {/* Optional customer detail form */}
+          {/* Delivery details — always visible */}
           <div style={{marginBottom:12}}>
-            <button onClick={()=>setShowForm(f=>!f)} style={{background:"none",border:"1px solid var(--t-border,#e0dbd3)",width:"100%",padding:"8px",fontSize:10,fontWeight:600,letterSpacing:1,cursor:"pointer",fontFamily:"inherit",color:"var(--t-muted,#7a6e65)",display:"flex",alignItems:"center",justifyContent:"space-between",textTransform:"uppercase"}}>
-              <span>Add Delivery Details (Optional)</span>
-              <span>{showForm?"▲":"▼"}</span>
-            </button>
-            {showForm&&(
-              <div style={{background:"#f5f2ee",padding:12,border:"1px solid var(--t-border,#e0dbd3)",borderTop:"none",display:"grid",gap:8}}>
-                <input value={custName} onChange={e=>setCustName(e.target.value)} placeholder="Your Name" style={{border:"1px solid #d0ccc5",padding:"8px 10px",fontSize:12,outline:"none",fontFamily:"inherit",background:"var(--t-card,#fff)"}}/>
-                <input value={custCity} onChange={e=>setCustCity(e.target.value)} placeholder="City" style={{border:"1px solid #d0ccc5",padding:"8px 10px",fontSize:12,outline:"none",fontFamily:"inherit",background:"var(--t-card,#fff)"}}/>
-                <input value={custAddr} onChange={e=>setCustAddr(e.target.value)} placeholder="Address (optional)" style={{border:"1px solid #d0ccc5",padding:"8px 10px",fontSize:12,outline:"none",fontFamily:"inherit",background:"var(--t-card,#fff)"}}/>
-                <div style={{fontSize:9,color:"#8a7f76",letterSpacing:.5}}>Yeh details WhatsApp message mein shamil hongi</div>
-              </div>
-            )}
+            <div style={{fontSize:10,fontWeight:700,letterSpacing:1,color:"var(--t-muted,#7a6e65)",textTransform:"uppercase",marginBottom:6}}>Delivery Details</div>
+            <div style={{display:"grid",gap:7}}>
+              <input value={custName} onChange={e=>setCustName(e.target.value)} placeholder="Aapka Naam *" style={{border:"1px solid #d0ccc5",padding:"9px 12px",fontSize:13,outline:"none",fontFamily:"inherit",background:"var(--t-card,#fff)",borderRadius:4}}/>
+              <input value={custCity} onChange={e=>setCustCity(e.target.value)} placeholder="Shehar (City) *" style={{border:"1px solid #d0ccc5",padding:"9px 12px",fontSize:13,outline:"none",fontFamily:"inherit",background:"var(--t-card,#fff)",borderRadius:4}}/>
+              <input value={custAddr} onChange={e=>setCustAddr(e.target.value)} placeholder="Pata (Address) — optional" style={{border:"1px solid #d0ccc5",padding:"9px 12px",fontSize:13,outline:"none",fontFamily:"inherit",background:"var(--t-card,#fff)",borderRadius:4}}/>
+              <div style={{fontSize:9,color:"#8a7f76",letterSpacing:.3}}>Yeh details WhatsApp order mein shamil hongi</div>
+            </div>
           </div>
           {/* Advance payment note */}
           <div style={{background:"#fef9c3",border:"1px solid #fde68a",padding:"8px 12px",fontSize:10,color:"#92400e",marginBottom:12,lineHeight:1.6}}>
@@ -1142,14 +1156,12 @@ function PCardSkeleton(){
 }
 
 
-const TRENDING_CITIES=["Lahore","Karachi","Islamabad","Faisalabad","Multan","Rawalpindi","Gujranwala","Sialkot","Peshawar","Quetta"];
 function PCard({prod,onAdd,onWish,wished,idx,onOpenModal,onPriceDrop}){
   const[hov,setHov]=useState(false);const[added,setAdded]=useState(false);
   const img=prod.img1||prod.photo_url||"";
   const price=Number(prod.sale_price||prod.price||0);
   const old=prod.old_price?Number(prod.old_price):null;
   const lowStock=prod.display_stock_text&&(prod.display_stock_text.includes("2")||prod.display_stock_text.includes("3")||prod.display_stock_text.toLowerCase().includes("last")||prod.display_stock_text.toLowerCase().includes("sirf"));
-  const trendCity=prod.trending?TRENDING_CITIES[prod.id?prod.id.charCodeAt(0)%TRENDING_CITIES.length:idx%TRENDING_CITIES.length]:null;
   function handleAdd(e){e.stopPropagation();onAdd(prod);setAdded(true);setTimeout(()=>setAdded(false),1200);}
   function handleShare(e){e.stopPropagation();const txt="Yeh product dekho: *"+prod.name+"*\nRs."+price.toLocaleString()+"\n\nJameel Fabrics Kunjah\njameel-fabrics-catalogue.vercel.app";window.open("https://wa.me/?text="+encodeURIComponent(txt),"_blank");}
   return(
@@ -1163,7 +1175,6 @@ function PCard({prod,onAdd,onWish,wished,idx,onOpenModal,onPriceDrop}){
           <button onClick={handleAdd} style={{background:"transparent",color:"rgba(255,255,255,.85)",border:"1px solid rgba(255,255,255,.4)",padding:"6px 22px",fontSize:9,fontWeight:600,letterSpacing:1.5,cursor:"pointer",fontFamily:"inherit",textTransform:"uppercase",transform:hov?"translateY(0)":"translateY(16px)",transition:"transform .35s .05s"}}>ADD TO CART</button>
         </div>
         {prod.badge&&<div style={{position:"absolute",top:12,left:12,background:prod.badge==="SALE"?"#b91c1c":"#111",color:"#fff",padding:"3px 10px",fontSize:7,fontWeight:800,letterSpacing:2,textTransform:"uppercase",zIndex:2}}>{prod.badge}</div>}
-        {trendCity&&<div style={{position:"absolute",top:prod.badge?38:12,left:12,background:"linear-gradient(135deg,#f59e0b,#d97706)",color:"#fff",padding:"3px 8px",fontSize:7,fontWeight:800,letterSpacing:1,textTransform:"uppercase",zIndex:2,borderRadius:3,display:"flex",alignItems:"center",gap:3}}>🔥 Trending in {trendCity}</div>}
         <button onClick={e=>{e.stopPropagation();onWish(prod.id);}} style={{position:"absolute",top:12,right:12,zIndex:2,width:34,height:34,borderRadius:"50%",background:"rgba(250,249,247,.92)",border:"1px solid #d0ccc5",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",opacity:hov?1:0,transform:hov?"scale(1)":"scale(.6)",transition:"all .3s"}}>
           <svg width="14" height="14" viewBox="0 0 24 24" stroke={wished?"#b91c1c":"#9a8f83"} strokeWidth="1.5" fill={wished?"#b91c1c":"none"}><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
         </button>
@@ -1204,71 +1215,6 @@ function PolicyCard({ic,title,desc,color}){
 }
 
 
-/* ═══ STYLE QUIZ ═══ */
-function StyleQuiz({prods,onClose,onFilter}){
-  const[step,setStep]=useState(0);
-  const[ans,setAns]=useState({});
-  const[result,setResult]=useState(null);
-
-  const QUESTIONS=[
-    {key:"gender",q:"Aap ke liye shopping kar rahe hain?",opts:["Apne liye (Women)","Apne liye (Men)","Bachon ke liye","Gift ke liye"]},
-    {key:"occasion",q:"Kaunsa occasion hai?",opts:["Eid / Mehndi","Office / Daily wear","Wedding / Party","Casual / Home"]},
-    {key:"feel",q:"Fabric kaisa chahiye?",opts:["Soft & light","Medium weight","Heavy & warm","Embroidered"]},
-    {key:"budget",q:"Budget kya hai?",opts:["Under Rs.2000","Rs.2000–5000","Rs.5000–10000","Rs.10000+"]},
-    {key:"color",q:"Kaun sa color prefer karte hain?",opts:["Light & pastel","Dark & bold","Neutral (white/beige/grey)","Printed / colorful"]},
-  ];
-
-  function pick(val){
-    const newAns={...ans,[QUESTIONS[step].key]:val};
-    setAns(newAns);
-    if(step<QUESTIONS.length-1){setStep(s=>s+1);}
-    else{
-      const gMap={"Apne liye (Women)":"WU","Apne liye (Men)":"MP","Bachon ke liye":"KU","Gift ke liye":"WU"};
-      const cat=gMap[newAns.gender]||"All";
-      setResult({cat,ans:newAns});
-    }
-  }
-
-  const q=QUESTIONS[step];
-  return(
-    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.65)",zIndex:2000,display:"flex",alignItems:"center",justifyContent:"center",padding:16}} onClick={onClose}>
-      <div style={{background:"#fff",borderRadius:16,padding:28,width:"100%",maxWidth:420}} onClick={e=>e.stopPropagation()}>
-        {result?(
-          <div style={{textAlign:"center"}}>
-            <div style={{fontSize:40,marginBottom:12}}>🎉</div>
-            <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:22,fontWeight:700,marginBottom:8}}>Your Style Profile!</div>
-            <div style={{fontSize:13,color:"#7a6e65",lineHeight:1.7,marginBottom:20}}>
-              Based on your answers, we recommend:<br/>
-              <strong style={{color:"#1a1612"}}>{result.ans.gender} · {result.ans.occasion} · {result.ans.feel}</strong>
-            </div>
-            <div style={{background:"#f5f0e8",borderRadius:8,padding:14,marginBottom:20,fontSize:13,color:"#4a4035"}}>
-              Budget: <strong>{result.ans.budget}</strong> · Color: <strong>{result.ans.color}</strong>
-            </div>
-            <button onClick={()=>onFilter(result.cat)} style={{width:"100%",background:"#111",color:"#fff",border:"none",padding:"13px",fontSize:11,fontWeight:700,letterSpacing:2,textTransform:"uppercase",cursor:"pointer",borderRadius:6,marginBottom:8}}>Show My Products →</button>
-            <button onClick={()=>{setStep(0);setAns({});setResult(null);}} style={{width:"100%",background:"none",border:"1px solid #e0d8cc",padding:"10px",fontSize:12,cursor:"pointer",borderRadius:6,color:"#7a6e65"}}>Retake Quiz</button>
-          </div>
-        ):(
-          <>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
-              <div style={{fontSize:10,color:"#7a6e65",letterSpacing:1}}>Question {step+1} of {QUESTIONS.length}</div>
-              <button onClick={onClose} style={{background:"none",border:"none",fontSize:18,cursor:"pointer",color:"#9a8f83"}}>✕</button>
-            </div>
-            <div style={{background:"#f5f0e8",borderRadius:6,height:4,marginBottom:20,overflow:"hidden"}}>
-              <div style={{width:((step+1)/QUESTIONS.length*100)+"%",height:"100%",background:"#c9a84c",transition:"width .3s"}}/>
-            </div>
-            <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:20,fontWeight:700,color:"#1a1612",marginBottom:20,lineHeight:1.3}}>{q.q}</div>
-            <div style={{display:"flex",flexDirection:"column",gap:8}}>
-              {q.opts.map(o=>(
-                <button key={o} onClick={()=>pick(o)} style={{padding:"12px 16px",border:"1px solid #e0d8cc",borderRadius:8,background:"#fff",cursor:"pointer",fontSize:13,fontWeight:500,color:"#1a1612",textAlign:"left",transition:"all .15s"}} onMouseEnter={e=>{e.currentTarget.style.border="1px solid #c9a84c";e.currentTarget.style.background="#fffdf5";}} onMouseLeave={e=>{e.currentTarget.style.border="1px solid #e0d8cc";e.currentTarget.style.background="#fff";}}>{o}</button>
-              ))}
-            </div>
-            {step>0&&<button onClick={()=>setStep(s=>s-1)} style={{marginTop:14,background:"none",border:"none",cursor:"pointer",fontSize:12,color:"#7a6e65",padding:0}}>← Back</button>}
-          </>
-        )}
-      </div>
-    </div>
-  );
-}
 
 /* ═══ PRODUCT MODAL ═══ */
 function ProductModal({prod,onClose,onAdd,onWish,wished}){
@@ -2084,7 +2030,7 @@ function Store({user,onLogout,onAccount,onAdmin,siteTheme,themeName}){
   const[priceDrop,setPriceDrop]=useState({});
   const[vipUnlocked,setVipUnlocked]=useState(false);
   const[abandonPopup,setAbandonPopup]=useState(false);
-  const[styleQuizOpen,setStyleQuizOpen]=useState(false);
+
   const[heroImgIdx,setHeroImgIdx]=useState(0);
   const heroImgs=["👗","✨","🌸","🧵","💎"];
   const[modalProd,setModalProd]=useState(null);
@@ -2093,6 +2039,8 @@ function Store({user,onLogout,onAccount,onAdmin,siteTheme,themeName}){
   const[showTop,setShowTop]=useState(false);
 
   const searchRef=useRef(null);
+  const mobSearchRef=useRef(null);
+  const[mobSearchOpen,setMobSearchOpen]=useState(false);
   useReveal();
   const heroLines=["Exclusive Collections","Premium Pakistani Fabric","Handpicked Quality","Timeless Elegance","Limited Edition Pieces"];
   useEffect(()=>{const t=setInterval(()=>setHeroIdx(i=>(i+1)%heroLines.length),3000);return()=>clearInterval(t);},[]);
@@ -2216,6 +2164,10 @@ function Store({user,onLogout,onAccount,onAdmin,siteTheme,themeName}){
         {search&&<button onClick={()=>setSearch("")} style={{background:"none",border:"none",cursor:"pointer",color:"var(--t-muted)",fontSize:16,padding:0}}>x</button>}
       </div>
       <div style={{display:"flex",alignItems:"center",gap:2,flexShrink:0}}>
+        {/* Mobile search icon */}
+        <button className="show-mob" onClick={()=>{setMobSearchOpen(o=>!o);setTimeout(()=>mobSearchRef.current?.focus(),80);}} style={{background:"none",border:"none",cursor:"pointer",width:40,height:40,display:"none",alignItems:"center",justifyContent:"center",color:`${TH.muted}`,borderRadius:4,transition:"background .2s"}} onMouseEnter={e=>e.currentTarget.style.background=TH.surface} onMouseLeave={e=>e.currentTarget.style.background="none"}>
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        </button>
         {/* Account icon */}
         <button onClick={()=>user?onAccount():setAuthModal("login")} style={{background:"none",border:"none",cursor:"pointer",width:40,height:40,display:"flex",alignItems:"center",justifyContent:"center",color:`${TH.muted}`,borderRadius:4,transition:"background .2s"}} onMouseEnter={e=>e.currentTarget.style.background=TH.surface} onMouseLeave={e=>e.currentTarget.style.background="none"}>
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
@@ -2237,6 +2189,38 @@ function Store({user,onLogout,onAccount,onAdmin,siteTheme,themeName}){
         </button>
       </div>
     </nav>
+    {/* MOBILE SEARCH BAR */}
+    {mobSearchOpen&&(
+      <div style={{background:"var(--t-card)",borderBottom:`1px solid var(--t-border)`,padding:"10px clamp(14px,3vw,24px)",display:"flex",gap:8,alignItems:"center",position:"sticky",top:64,zIndex:99,boxShadow:"0 4px 12px rgba(0,0,0,.06)",animation:"fadeUp .2s ease"}}>
+        <div style={{display:"flex",alignItems:"center",gap:8,background:"var(--t-surface)",border:`1px solid var(--t-border)`,padding:"9px 14px",flex:1,borderRadius:4}}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9a8f83" strokeWidth="1.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <input ref={mobSearchRef} type="text" value={search} onChange={e=>setSearch(e.target.value)} placeholder="Koi bhi product dhundho..." style={{background:"none",border:"none",outline:"none",fontSize:14,color:"var(--t-text)",width:"100%",fontFamily:"inherit"}}/>
+          {search&&<button onClick={()=>setSearch("")} style={{background:"none",border:"none",cursor:"pointer",color:"var(--t-muted)",fontSize:18,padding:0,lineHeight:1}}>×</button>}
+        </div>
+        <button onClick={()=>{setMobSearchOpen(false);if(!search)setSearch("");}} style={{background:"none",border:"none",cursor:"pointer",color:"var(--t-muted)",fontSize:13,fontFamily:"inherit",whiteSpace:"nowrap",flexShrink:0,padding:"0 4px"}}>Cancel</button>
+      </div>
+    )}
+    {/* STICKY FREE SHIPPING PROGRESS BAR — shows when cart has items */}
+    {(()=>{
+      const min=Number(settings?.free_shipping_min||2000);
+      const active=settings?.free_shipping_active!=="false";
+      const cartSub=cart.reduce((s,x)=>s+x.price*x.qty,0);
+      if(!active||cartSub===0)return null;
+      const pct=Math.min(100,Math.round(cartSub/min*100));
+      const remaining=Math.max(0,min-cartSub);
+      const done=remaining<=0;
+      return(
+        <div style={{position:"sticky",top:mobSearchOpen?114:64,zIndex:98,background:done?"#16a34a":"linear-gradient(90deg,#b91c1c,#dc2626)",height:32,overflow:"hidden",cursor:"pointer"}} onClick={()=>setCartOpen(true)}>
+          <div style={{position:"absolute",left:0,top:0,bottom:0,width:pct+"%",background:done?"rgba(255,255,255,.2)":"rgba(255,255,255,.15)",transition:"width .5s ease",borderRight:done?"none":"2px solid rgba(255,255,255,.3)"}}/>
+          <div style={{position:"relative",height:"100%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,letterSpacing:.5,color:"#fff",padding:"0 12px",textAlign:"center",zIndex:1}}>
+            {done
+              ?<>🚚 Free Shipping Unlock! ✓</>
+              :<>🚚 Rs.{remaining.toLocaleString()} aur dalo — Free Shipping paao! ({pct}%)</>
+            }
+          </div>
+        </div>
+      );
+    })()}
     {/* SIDE MENU */}
     {menuOpen&&(<>
       <div style={{position:"fixed",inset:0,zIndex:998,background:"rgba(0,0,0,.5)",backdropFilter:"blur(4px)"}} onClick={()=>setMenuOpen(false)}/>
@@ -2660,11 +2644,6 @@ function Store({user,onLogout,onAccount,onAdmin,siteTheme,themeName}){
       </div>
     </div>}
 
-    {/* STYLE QUIZ */}
-    {styleQuizOpen&&<StyleQuiz prods={prods} onClose={()=>setStyleQuizOpen(false)} onFilter={p=>{setCat(p);document.getElementById("prods")?.scrollIntoView({behavior:"smooth"});setStyleQuizOpen(false);}}/>}
-    <button onClick={()=>setStyleQuizOpen(true)} style={{position:"fixed",bottom:80,right:16,zIndex:899,background:"linear-gradient(135deg,#6366f1,#8b5cf6)",color:"#fff",border:"none",borderRadius:50,padding:"10px 16px",fontSize:12,fontWeight:600,cursor:"pointer",boxShadow:"0 4px 16px rgba(99,102,241,.4)",display:"flex",alignItems:"center",gap:6}}>
-      🎯 Style Quiz
-    </button>
   </div>);
 }
 
@@ -2699,17 +2678,8 @@ function RecentlyViewedStrip({items,onOpenModal}){
 function AccountPage({user,onBack}){
   const[orders,setOrders]=useState([]);const[wl,setWl]=useState([]);
   const[tab,setTab]=useState("orders");
-  const[compareA,setCompareA]=useState(null);const[compareB,setCompareB]=useState(null);
-  const[compareOpen,setCompareOpen]=useState(false);
   useEffect(()=>{if(!sb||!user)return;sb.from("online_orders").select("*").eq("customer_id",user.id).order("created_at",{ascending:false}).then(({data})=>setOrders(data||[]));sb.from("wishlists").select("*,products(*)").eq("customer_id",user.id).then(({data})=>setWl(data||[]));},[user]);
   const C={background:"var(--t-card)",border:"1px solid var(--t-border)",padding:24,marginBottom:16};
-
-  // Wardrobe: all purchased items flattened
-  const wardrobe=orders.flatMap(o=>(o.items||[]).map(it=>({...it,orderId:o.id,orderedAt:o.created_at,status:o.status})));
-
-  // Style Score
-  const styleScore=Math.min(100,wardrobe.length*10+wl.length*5);
-  const scoreLabel=styleScore>=80?"Style Icon 👑":styleScore>=50?"Trendsetter ✨":styleScore>=20?"Fashion Starter 🌸":"New Member 🎀";
 
   return(<div style={{background:"var(--t-bg)",minHeight:"100vh",fontFamily:"var(--t-bf,'Jost',sans-serif)"}}>
     <div style={{background:"var(--t-card)",borderBottom:"1px solid #e8e4df",padding:"16px clamp(16px,4vw,60px)",display:"flex",alignItems:"center",gap:16,position:"sticky",top:0,zIndex:100}}>
@@ -2720,7 +2690,7 @@ function AccountPage({user,onBack}){
     </div>
     {/* Tab nav */}
     <div style={{background:"var(--t-card)",borderBottom:"1px solid var(--t-border)",display:"flex",overflowX:"auto"}}>
-      {[["orders","📦 Orders"],["wardrobe","👗 My Wardrobe"],["wishlist","❤️ Wishlist"]].map(([k,l])=>(
+      {[["orders","📦 Orders"],["wishlist","❤️ Wishlist"]].map(([k,l])=>(
         <button key={k} onClick={()=>setTab(k)} style={{padding:"12px 20px",border:"none",background:"none",cursor:"pointer",fontFamily:"inherit",fontSize:12,fontWeight:600,color:tab===k?"#c9a84c":"#7a6e65",borderBottom:tab===k?"2px solid #c9a84c":"2px solid transparent",whiteSpace:"nowrap",transition:"all .2s"}}>{l}</button>
       ))}
     </div>
@@ -2738,78 +2708,6 @@ function AccountPage({user,onBack}){
         }
       </div>}
 
-      {/* ── WARDROBE TAB ── */}
-      {tab==="wardrobe"&&<>
-        {/* Style Score */}
-        <div style={{...C,background:"linear-gradient(135deg,#1a1612,#2c1f0a)",border:"none",color:"#f5efe0"}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:12}}>
-            <div>
-              <div style={{fontSize:10,letterSpacing:3,color:"#c9a84c",textTransform:"uppercase",marginBottom:4}}>Your Style Score</div>
-              <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:28,fontWeight:700,color:"#c9a84c"}}>{styleScore}/100</div>
-              <div style={{fontSize:13,color:"rgba(245,239,224,.7)",marginTop:4}}>{scoreLabel}</div>
-            </div>
-            <div style={{textAlign:"right"}}>
-              <div style={{fontSize:12,color:"rgba(245,239,224,.5)",marginBottom:4}}>{wardrobe.length} items purchased · {wl.length} in wishlist</div>
-              <div style={{background:"rgba(201,168,76,.15)",border:"1px solid rgba(201,168,76,.3)",padding:"6px 14px",borderRadius:20,fontSize:11,color:"#c9a84c"}}>
-                {styleScore<50?"Add more to wardrobe to improve score":"Great wardrobe! Keep exploring"}
-              </div>
-            </div>
-          </div>
-          <div style={{marginTop:14,background:"rgba(255,255,255,.08)",borderRadius:4,height:6,overflow:"hidden"}}>
-            <div style={{width:styleScore+"%",height:"100%",background:"linear-gradient(90deg,#c9a84c,#e8c96a)",transition:"width 1s ease",borderRadius:4}}/>
-          </div>
-        </div>
-
-        {/* Purchased Items */}
-        <div style={C}>
-          <div style={{fontSize:15,fontWeight:600,marginBottom:16}}>👗 My Purchased Items ({wardrobe.length})</div>
-          {!wardrobe.length?<div style={{textAlign:"center",padding:32,color:"#8a7f76"}}><div style={{fontSize:14}}>No purchases yet — start shopping!</div></div>:(
-            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(150px,1fr))",gap:12}}>
-              {wardrobe.map((it,i)=>(
-                <div key={i} style={{border:"1px solid var(--t-border)",borderRadius:8,overflow:"hidden",background:"var(--t-bg)"}}>
-                  <div style={{background:"#f5f0e8",aspectRatio:"1",display:"flex",alignItems:"center",justifyContent:"center",fontSize:32}}>👗</div>
-                  <div style={{padding:"8px 10px"}}>
-                    <div style={{fontWeight:600,fontSize:12,lineHeight:1.3,marginBottom:4}}>{it.name||"Product"}</div>
-                    <div style={{fontSize:11,color:"#c9a84c",fontWeight:700}}>Rs.{Number(it.price||0).toLocaleString()}</div>
-                    <div style={{fontSize:9,color:"#9a8f83",marginTop:3}}>{new Date(it.orderedAt).toLocaleDateString()}</div>
-                    {compareA===null||compareA===i?(
-                      <button onClick={()=>setCompareA(compareA===i?null:i)} style={{marginTop:6,width:"100%",fontSize:9,padding:"4px",border:"1px solid "+(compareA===i?"#c9a84c":"#e0d8cc"),background:compareA===i?"rgba(201,168,76,.1)":"transparent",cursor:"pointer",borderRadius:3,fontWeight:600,color:compareA===i?"#c9a84c":"#7a6e65"}}>
-                        {compareA===i?"✓ Selected A":"Select A"}
-                      </button>
-                    ):(
-                      <button onClick={()=>{setCompareB(i);setCompareOpen(true);}} style={{marginTop:6,width:"100%",fontSize:9,padding:"4px",border:"1px solid #6366f1",background:"rgba(99,102,241,.08)",cursor:"pointer",borderRadius:3,fontWeight:600,color:"#6366f1"}}>Compare with A</button>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Compare Modal */}
-        {compareOpen&&compareA!==null&&compareB!==null&&(
-          <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",zIndex:2000,display:"flex",alignItems:"center",justifyContent:"center",padding:16}} onClick={()=>setCompareOpen(false)}>
-            <div style={{background:"#fff",borderRadius:12,padding:24,width:"100%",maxWidth:500}} onClick={e=>e.stopPropagation()}>
-              <div style={{display:"flex",justifyContent:"space-between",marginBottom:16}}>
-                <div style={{fontWeight:700,fontSize:15}}>Compare Items</div>
-                <button onClick={()=>setCompareOpen(false)} style={{background:"none",border:"none",fontSize:18,cursor:"pointer"}}>✕</button>
-              </div>
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>
-                {[wardrobe[compareA],wardrobe[compareB]].map((it,i)=>(
-                  <div key={i} style={{border:"1px solid #e0d8cc",borderRadius:8,padding:14,textAlign:"center"}}>
-                    <div style={{fontSize:10,color:"#7a6e65",marginBottom:6,fontWeight:700,letterSpacing:1}}>{i===0?"ITEM A":"ITEM B"}</div>
-                    <div style={{fontSize:32,marginBottom:8}}>👗</div>
-                    <div style={{fontWeight:600,fontSize:13,marginBottom:4}}>{it?.name||"Product"}</div>
-                    <div style={{fontSize:14,fontWeight:700,color:"#c9a84c"}}>Rs.{Number(it?.price||0).toLocaleString()}</div>
-                    <div style={{fontSize:10,color:"#9a8f83",marginTop:4}}>{new Date(it?.orderedAt).toLocaleDateString()}</div>
-                  </div>
-                ))}
-              </div>
-              <button onClick={()=>{setCompareOpen(false);setCompareA(null);setCompareB(null);}} style={{marginTop:16,width:"100%",padding:"10px",background:"#111",color:"#fff",border:"none",borderRadius:6,cursor:"pointer",fontWeight:600,fontSize:13}}>Close</button>
-            </div>
-          </div>
-        )}
-      </>}
 
       {/* ── WISHLIST TAB ── */}
       {tab==="wishlist"&&
