@@ -2564,7 +2564,7 @@ function Store({user,onLogout,onAccount,onAdmin,siteTheme,themeName}){
     </section>
     
     {/* HIDDEN VIP COLLECTION */}
-    {vipUnlocked&&<section style={{padding:"clamp(48px,6vw,80px) clamp(16px,4vw,60px)",background:"linear-gradient(135deg,#0a0806 0%,#1a1612 50%,#2c1f0a 100%)",position:"relative",overflow:"hidden"}}>
+    {vipUnlocked&&settings.show_vip!=="false"&&<section style={{padding:"clamp(48px,6vw,80px) clamp(16px,4vw,60px)",background:"linear-gradient(135deg,#0a0806 0%,#1a1612 50%,#2c1f0a 100%)",position:"relative",overflow:"hidden"}}>
       <div style={{position:"absolute",inset:0,backgroundImage:"radial-gradient(circle,rgba(201,168,76,.08) 1px,transparent 1px)",backgroundSize:"28px 28px",pointerEvents:"none"}}/>
       <div style={{position:"relative",zIndex:1}}>
         <div style={{textAlign:"center",marginBottom:36}}>
@@ -3842,6 +3842,7 @@ function AContent({settings}){
     {t:"🗺️ Countdown Timer",fields:[["sale_title","Sale Title"],["sale_text","Sale Subtitle"],["sale_end_date","End Date",false,true]],visKey:"show_countdown",visDefault:"true"},
     {t:"📖 Our Story",fields:[["our_story_title","Section Title"],["story_text","Story Text",true],["story_stat1","Stat 1 Number"],["story_label1","Stat 1 Label"],["story_stat2","Stat 2 Number"],["story_label2","Stat 2 Label"],["story_stat3","Stat 3 Number"],["story_label3","Stat 3 Label"]],visKey:"show_our_story",visDefault:"true"},
     {t:"✨ Why Choose Us",fields:[["why_us_title","Section Title"],["feat1_title","Feature 1 Title"],["feat1_desc","Feature 1 Desc"],["feat2_title","Feature 2 Title"],["feat2_desc","Feature 2 Desc"],["feat3_title","Feature 3 Title"],["feat3_desc","Feature 3 Desc"],["feat4_title","Feature 4 Title"],["feat4_desc","Feature 4 Desc"]],visKey:"show_why_us",visDefault:"true"},
+    {t:"🌙 Eid Countdown",fields:[["eid_title","Banner Title (e.g. Eid Collection)"],["eid_subtitle","Subtitle Text"],["eid_date","Countdown Target Date",false,true]],visKey:"eid_show",visDefault:"false"},
   ];
 
   // Visibility-only sections (no text content to edit)
@@ -4742,8 +4743,9 @@ function AUdhaar(){
 
 
 function APriceDropAlerts(){
-  const{data:alerts,loading}=useDB(()=>sb.from("price_drop_alerts").select("*").order("created_at",{ascending:false}),[]);
-  async function del(id){if(!sb||!window.confirm("Delete?"))return;await sb.from("price_drop_alerts").delete().eq("id",id);toast("Deleted");}
+  const[tick,setTick]=useState(0);
+  const{data:alerts,loading}=useDB(()=>sb.from("price_drop_alerts").select("*").order("created_at",{ascending:false}),[tick]);
+  async function del(id){if(!sb||!window.confirm("Delete?"))return;await sb.from("price_drop_alerts").delete().eq("id",id);toast("Deleted");setTick(t=>t+1);}
   const wa=WA_NUM;
   return(<div>
     <AH title="🔔 Price Drop Alerts" sub="Customers jo price drop chahte hain"/>
