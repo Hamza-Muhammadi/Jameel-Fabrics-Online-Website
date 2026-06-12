@@ -2882,7 +2882,7 @@ function ASaveBtn({saving,saved,onClick}){
 function AThemeSettings({settings,onSaved}){
   const{f,updateF,saving,saved,save}=useSettingsSave(settings);
   async function applyTheme(){
-    await save(["site_theme"]);
+    await save(["site_theme","design_v2"]);
     if(f.site_theme&&typeof localStorage!=="undefined"){
       localStorage.setItem("jf_theme",f.site_theme);
       window.dispatchEvent(new CustomEvent("jf-theme-change",{detail:f.site_theme}));
