@@ -2027,8 +2027,7 @@ function ThemeStyle({TH}){
 }
 
 
-function NewsletterBar(){
-  const settings=useSettings();
+function NewsletterBar({settings={}}){
   const[email,setEmail]=useState("");
   const[done,setDone]=useState(false);
   const[loading,setLoading]=useState(false);
@@ -2720,7 +2719,7 @@ function Store({user,onLogout,onAccount,onAdmin,siteTheme,themeName}){
         ))}
       </div>
       {/* Newsletter */}
-      {settings.show_newsletter!=="false"&&<NewsletterBar/>}
+      {settings.show_newsletter!=="false"&&<NewsletterBar settings={settings}/>}
       <div style={{borderTop:"1px solid rgba(255,255,255,.07)",paddingTop:20,paddingBottom:28,maxWidth:1200,margin:"0 auto",display:"flex",justifyContent:"space-between",flexWrap:"wrap",gap:8}}>
         <div style={{fontSize:9,color:"rgba(255,255,255,.18)",letterSpacing:1}}>© 2026 {settings.store_name||"JAMEEL FABRICS KUNJAH"}. All Rights Reserved.</div>
         <div style={{fontSize:9,color:"rgba(255,255,255,.18)",letterSpacing:1}}>Premium Pakistani Clothing · Est. 1975 · Kunjah, Gujrat</div>
