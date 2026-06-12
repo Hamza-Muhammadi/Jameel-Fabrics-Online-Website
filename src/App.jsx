@@ -2302,7 +2302,7 @@ function Store({user,onLogout,onAccount,onAdmin,siteTheme,themeName}){
       <div style={{position:"fixed",inset:0,zIndex:998,background:"rgba(0,0,0,.5)",backdropFilter:"blur(4px)"}} onClick={()=>setMenuOpen(false)}/>
       <div style={{position:"fixed",top:0,right:0,bottom:0,width:"min(320px,88vw)",zIndex:999,background:"var(--t-bg)",display:"flex",flexDirection:"column",boxShadow:"-16px 0 48px rgba(0,0,0,.14)",animation:"slideR .3s cubic-bezier(.77,0,.18,1)"}}>
         <div style={{padding:"20px 24px",display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:"1px solid #e8e4df",flexShrink:0}}>
-          <div><div style={{fontFamily:"var(--t-hf,'Playfair Display',serif)",fontSize:15,fontWeight:700,color:"var(--t-text)"}}>JAMEEL FABRICS</div><div style={{fontSize:9,color:"var(--t-muted)",letterSpacing:2,fontStyle:"italic",fontFamily:"'Cormorant Garamond',serif"}}>Kunjah · Punjab</div></div>
+          <div><div style={{fontFamily:"var(--t-hf,'Playfair Display',serif)",fontSize:15,fontWeight:700,color:"var(--t-text)"}}>{settings.store_name||"JAMEEL FABRICS"}</div><div style={{fontSize:9,color:"var(--t-muted)",letterSpacing:2,fontStyle:"italic",fontFamily:"'Cormorant Garamond',serif"}}>{settings.intro_tagline||"Kunjah · Punjab"}</div></div>
           <button onClick={()=>setMenuOpen(false)} style={{background:"none",border:"none",cursor:"pointer",fontSize:22,color:"var(--t-muted)"}}>x</button>
         </div>
         <div style={{flex:1,overflowY:"auto",overscrollBehavior:"contain"}}>
@@ -2345,7 +2345,7 @@ function Store({user,onLogout,onAccount,onAdmin,siteTheme,themeName}){
                     style={{display:"flex",alignItems:"center",gap:12,width:"100%",padding:"10px 16px",background:cat===code?"#f5f0e8":"none",border:"none",cursor:"pointer",fontFamily:"inherit",textAlign:"left",borderRadius:6,transition:"background .15s"}}
                     onMouseEnter={e=>e.currentTarget.style.background="#f5f0e8"} onMouseLeave={e=>{e.currentTarget.style.background=cat===code?"#f5f0e8":"none";}}>
                     <span style={{color:"var(--t-accent)",flexShrink:0}}>{icon}</span>
-                    <span style={{fontSize:13,color:"var(--t-text)",fontWeight:cat===code?600:400,flex:1}}>{label}</span>
+                    <span style={{fontSize:13,color:"var(--t-text)",fontWeight:cat===code?600:400,flex:1}}>{settings[`cat_label_${code}`]||label}</span>
                     {catBrands.length>0&&<svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="#9a8f83" strokeWidth="1.5" style={{transition:"transform .2s",transform:isExpanded?"rotate(180deg)":"rotate(0deg)"}}><path d="M2 4l4 4 4-4"/></svg>}
                   </button>
                   {isExpanded&&catBrands.length>0&&(
