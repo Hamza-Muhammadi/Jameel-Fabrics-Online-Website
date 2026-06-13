@@ -3435,7 +3435,7 @@ class ErrorBoundary extends React.Component{
 
 function AdminLogin({onSuccess,onCancel}){
   const[pass,setPass]=useState("");const[loading,setLoading]=useState(false);
-  async function check(){setLoading(true);let ok=false;if(sb){const{data}=await sb.from("website_settings").select("value").eq("key","admin_pass").single();ok=data?.value===pass;}else ok=pass==="jameel@admin2026";setLoading(false);if(ok)onSuccess();else{setPass("");toast("Wrong password!","error");}}
+  async function check(){setLoading(true);let ok=false;if(sb){const{data}=await sb.rpc("verify_admin_password",{input_pass:pass});ok=data===true;}else ok=pass==="jameel@admin2026";setLoading(false);if(ok)onSuccess();else{setPass("");toast("Wrong password!","error");}}
   return(<div style={{position:"fixed",inset:0,zIndex:99999,background:"rgba(0,0,0,.88)",display:"flex",alignItems:"center",justifyContent:"center",backdropFilter:"blur(10px)"}}>
     <div style={{background:"var(--t-bg)",padding:"44px 40px",width:"100%",maxWidth:360,textAlign:"center"}}>
       <div style={{fontFamily:"var(--t-hf,'Playfair Display',serif)",fontSize:24,fontWeight:700,color:"var(--t-text)",marginBottom:4}}>Admin Panel</div>
